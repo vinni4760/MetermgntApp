@@ -2,10 +2,11 @@ import React, { useState } from 'react';
 import { useMeterContext } from '../context/MeterContext';
 import { Card, Badge, Select } from '../components/ui';
 import { InstallationStatus } from '../types';
+import { InstallationMap } from '../components/Map/InstallationMap';
 import './MeterTracking.css';
 
 export const MeterTracking: React.FC = () => {
-    const { installations, meters } = useMeterContext();
+    const { installations } = useMeterContext();
     const [statusFilter, setStatusFilter] = useState<string>('all');
     const [installerFilter, setInstallerFilter] = useState<string>('all');
 
@@ -76,27 +77,13 @@ export const MeterTracking: React.FC = () => {
                 </Card>
             </div>
 
-            {/* Map Placeholder */}
+            {/* Interactive GPS Map */}
             <Card className="map-container">
-                <h3>GPS Tracking Map</h3>
-                <div className="map-placeholder">
-                    <div className="map-overlay">
-                        <div className="map-icon">🗺️</div>
-                        <p>GPS tracking map view</p>
-                        <p className="text-muted">Interactive map would display installer locations here</p>
-                        {filteredInstallations.length > 0 && (
-                            <div className="map-markers">
-                                {filteredInstallations.map(installation => (
-                                    <div key={installation.id} className="marker-info">
-                                        📍 {installation.meterSerialNumber} -
-                                        Lat: {installation.gpsLocation.latitude.toFixed(4)},
-                                        Lng: {installation.gpsLocation.longitude.toFixed(4)}
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                </div>
+                <h3>📍 Live GPS Tracking Map</h3>
+                <p className="text-muted" style={{ marginBottom: 'var(--spacing-lg)' }}>
+                    Click on markers to view installation details • {filteredInstallations.length} location(s) displayed
+                </p>
+                <InstallationMap installations={filteredInstallations} />
             </Card>
 
             {/* Installation Cards Grid */}
