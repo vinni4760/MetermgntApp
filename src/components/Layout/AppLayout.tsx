@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 import './AppLayout.css';
 
 interface AppLayoutProps {
@@ -9,8 +10,15 @@ interface AppLayoutProps {
 export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const location = useLocation();
+    const navigate = useNavigate();
+    const { user, logout } = useAuth();
 
     const isActive = (path: string) => location.pathname === path;
+
+    const handleLogout = () => {
+        logout();
+        navigate('/login');
+    };
 
     const menuItems = [
         { path: '/', label: 'Dashboard', icon: '📊' },
@@ -24,6 +32,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
             ]
         },
         { path: '/meter-tracking', label: 'Meter Tracking', icon: '📍' },
+        { path: '/manage-installers', label: 'Manage Installers', icon: '👥' },
     ];
 
     return (
@@ -88,8 +97,14 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                     <div className="header-actions">
                         <div className="user-info">
                             <span className="user-avatar">👤</span>
-                            <span className="user-name">Admin</span>
+                            <div className="user-details">
+                                <span className="user-name">{user?.name}</span>
+                                <span className="user-role-text">{user?.role}</span>
+                            </div>
                         </div>
+                        <button className="logout-button" onClick={handleLogout}>
+                            Logout
+                        </button>
                     </div>
                 </header>
 

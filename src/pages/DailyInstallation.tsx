@@ -1,12 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useMeterContext } from '../context/MeterContext';
+import { useAuth } from '../context/AuthContext';
 import { Button, Card, Input, TextArea, Select } from '../components/ui';
-import { InstallationStatus } from '../types';
+import { InstallationStatus, UserRole } from '../types';
 import { mockInstallers } from '../utils/mockData';
 import './DailyInstallation.css';
 
 export const DailyInstallation: React.FC = () => {
     const { meters, vendors, addInstallation } = useMeterContext();
+    const { user } = useAuth();
     const [formData, setFormData] = useState({
         installerName: '',
         vendorName: '',
@@ -24,6 +26,16 @@ export const DailyInstallation: React.FC = () => {
     });
     const [message, setMessage] = useState('');
     const [loading, setLoading] = useState(false);
+
+    // Auto-fill installer name if logged in as installer
+    useEffect(() => {
+        if (user?.role === UserRole.INSTALLER) {
+            setFormData(prev => ({
+                ...prev,
+                installerName: user.name
+            }));
+        }
+    }, [user]);
 
     const assignedMeters = meters.filter(m => m.vendorId);
 
@@ -112,13 +124,22 @@ export const DailyInstallation: React.FC = () => {
 
                 <form onSubmit={handleSubmit} className="installation-form">
                     <div className="form-grid">
-                        <Select
-                            label="Installer Name *"
-                            name="installerName"
-                            value={formData.installerName}
-                            onChange={handleInputChange}
-                            options={mockInstallers.map(i => ({ value: i.name, label: i.name }))}
-                        />
+                        {user?.role === UserRole.INSTALLER ? (
+                            <Input
+                                label="Installer Name *"
+                                name="installerName"
+                                value={formData.installerName}
+                                disabled
+                            />
+                        ) : (
+                            <Select
+                                label="Installer Name *"
+                                name="installerName"
+                                value={formData.installerName}
+                                onChange={handleInputChange}
+                                options={mockInstallers.map(i => ({ value: i.name, label: i.name }))}
+                            />
+                        )}
 
                         <Select
                             label="Vendor Name"

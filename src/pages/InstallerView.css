@@ -1,0 +1,188 @@
+.installer-view {
+    min-height: 100vh;
+    background: var(--bg-primary);
+    padding: var(--spacing-lg);
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.installer-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-2xl);
+    padding: var(--spacing-lg);
+    background: var(--bg-glass);
+    backdrop-filter: blur(10px);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-color);
+}
+
+.installer-header-content {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-lg);
+}
+
+.installer-logo {
+    font-size: 3rem;
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.installer-header h1 {
+    font-size: 1.5rem;
+    margin: 0;
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.installer-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: var(--spacing-lg);
+    margin-bottom: var(--spacing-2xl);
+}
+
+.stat-card-installer {
+    padding: var(--spacing-xl);
+    text-align: center;
+}
+
+.stat-value-installer {
+    font-size: 2.5rem;
+    font-weight: 700;
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1;
+    margin-bottom: var(--spacing-sm);
+}
+
+.stat-label-installer {
+    color: var(--text-muted);
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.installer-main-action {
+    text-align: center;
+    margin-bottom: var(--spacing-2xl);
+}
+
+.new-installation-button {
+    width: 100%;
+    max-width: 400px;
+    padding: var(--spacing-xl) var(--spacing-2xl);
+    font-size: 1.25rem;
+    margin-bottom: var(--spacing-md);
+}
+
+.recent-installations-card {
+    padding: var(--spacing-xl);
+}
+
+.recent-installations-card h3 {
+    margin-bottom: var(--spacing-lg);
+}
+
+.installations-list-installer {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+}
+
+.installation-item-installer {
+    padding: var(--spacing-lg);
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color);
+    transition: all var(--transition-fast);
+}
+
+.installation-item-installer:hover {
+    background: var(--bg-card);
+    border-color: var(--accent-primary);
+    transform: translateX(4px);
+}
+
+.installation-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-sm);
+}
+
+.meter-serial-installer {
+    font-weight: 700;
+    font-size: 1.125rem;
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.status-dot {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    padding: 0.25rem 0.75rem;
+    border-radius: var(--radius-xl);
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.status-installed {
+    background: rgba(16, 185, 129, 0.2);
+    color: var(--accent-success);
+}
+
+.status-transit {
+    background: rgba(59, 130, 246, 0.2);
+    color: var(--accent-info);
+}
+
+.installation-details-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: var(--spacing-xs);
+    font-size: 0.875rem;
+}
+
+.installation-address {
+    font-size: 0.813rem;
+}
+
+.no-installations {
+    text-align: center;
+    padding: var(--spacing-2xl);
+}
+
+.no-installations-icon {
+    font-size: 4rem;
+    margin-bottom: var(--spacing-md);
+    opacity: 0.5;
+}
+
+@media (max-width: 768px) {
+    .installer-view {
+        padding: var(--spacing-md);
+    }
+
+    .installer-header {
+        flex-direction: column;
+        gap: var(--spacing-md);
+        align-items: flex-start;
+    }
+
+    .installer-stats {
+        grid-template-columns: 1fr;
+    }
+}
