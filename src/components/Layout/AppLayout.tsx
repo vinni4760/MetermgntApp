@@ -33,6 +33,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         },
         { path: '/meter-tracking', label: 'Meter Tracking', icon: '📍' },
         { path: '/manage-installers', label: 'Manage Installers', icon: '👥' },
+        { path: '/manage-vendors', label: 'Manage Vendors', icon: '🏢' },
     ];
 
     return (

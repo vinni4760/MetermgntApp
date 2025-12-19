@@ -115,6 +115,11 @@
     color: var(--accent-success);
 }
 
+.vendor-badge {
+    background: rgba(168, 85, 247, 0.2);
+    color: #a855f7;
+}
+
 .login-error {
     padding: var(--spacing-md);
     background: rgba(239, 68, 68, 0.2);

@@ -10,7 +10,9 @@ import { DailyInstallation } from './pages/DailyInstallation';
 import { BalanceCount } from './pages/BalanceCount';
 import { MeterTracking } from './pages/MeterTracking';
 import { InstallerView } from './pages/InstallerView';
+import { VendorView } from './pages/VendorView';
 import { ManageInstallers } from './pages/ManageInstallers';
+import { ManageVendors } from './pages/ManageVendors';
 import { UserRole } from './types';
 import './index.css';
 
@@ -24,6 +26,10 @@ const RootRedirect = () => {
 
   if (user.role === UserRole.INSTALLER) {
     return <Navigate to="/installer" replace />;
+  }
+
+  if (user.role === UserRole.VENDOR) {
+    return <Navigate to="/vendor" replace />;
   }
 
   return <Dashboard />;
@@ -44,6 +50,16 @@ function App() {
               element={
                 <ProtectedRoute allowedRoles={[UserRole.INSTALLER]}>
                   <InstallerView />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Vendor Routes */}
+            <Route
+              path="/vendor"
+              element={
+                <ProtectedRoute allowedRoles={[UserRole.VENDOR]}>
+                  <VendorView />
                 </ProtectedRoute>
               }
             />
@@ -107,6 +123,16 @@ function App() {
                 <ProtectedRoute allowedRoles={[UserRole.ADMIN]}>
                   <AppLayout>
                     <ManageInstallers />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/manage-vendors"
+              element={
+                <ProtectedRoute allowedRoles={[UserRole.ADMIN]}>
+                  <AppLayout>
+                    <ManageVendors />
                   </AppLayout>
                 </ProtectedRoute>
               }

@@ -26,4 +26,25 @@ export const mockUsers: User[] = [
         name: 'Vijay Sharma',
         role: UserRole.INSTALLER,
     },
+    {
+        id: '5',
+        username: 'vendor1',
+        name: 'PowerGrid Corp',
+        role: UserRole.VENDOR,
+        vendorId: '1',
+    },
+    {
+        id: '6',
+        username: 'vendor2',
+        name: 'EnergyPlus Ltd',
+        role: UserRole.VENDOR,
+        vendorId: '2',
+    },
+    {
+        id: '7',
+        username: 'vendor3',
+        name: 'MetroSupply Inc',
+        role: UserRole.VENDOR,
+        vendorId: '3',
+    },
 ];

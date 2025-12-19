@@ -25,8 +25,10 @@ export const Login: React.FC = () => {
             // Redirect based on role
             if (user?.role === UserRole.ADMIN) {
                 navigate('/');
-            } else {
+            } else if (user?.role === UserRole.INSTALLER) {
                 navigate('/installer');
+            } else if (user?.role === UserRole.VENDOR) {
+                navigate('/vendor');
             }
         } else {
             setError('Login failed');
@@ -35,6 +37,7 @@ export const Login: React.FC = () => {
 
     const adminUsers = users.filter(u => u.role === UserRole.ADMIN);
     const installerUsers = users.filter(u => u.role === UserRole.INSTALLER);
+    const vendorUsers = users.filter(u => u.role === UserRole.VENDOR);
 
     return (
         <div className="login-container">
@@ -74,6 +77,21 @@ export const Login: React.FC = () => {
                                         <div className="user-icon">🔧</div>
                                         <div className="user-name">{user.name}</div>
                                         <div className="user-role-badge installer-badge">Installer</div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            <h3 style={{ marginTop: 'var(--spacing-2xl)' }}>Vendor Login</h3>
+                            <div className="user-grid">
+                                {vendorUsers.map(user => (
+                                    <div
+                                        key={user.id}
+                                        className={`user-card ${selectedUser === user.username ? 'user-card-selected' : ''}`}
+                                        onClick={() => setSelectedUser(user.username)}
+                                    >
+                                        <div className="user-icon">🏢</div>
+                                        <div className="user-name">{user.name}</div>
+                                        <div className="user-role-badge vendor-badge">Vendor</div>
                                     </div>
                                 ))}
                             </div>

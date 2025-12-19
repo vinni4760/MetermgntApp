@@ -10,9 +10,13 @@ interface AuthContextType {
     logout: () => void;
     isAdmin: () => boolean;
     isInstaller: () => boolean;
+    isVendor: () => boolean;
     addInstaller: (installer: Omit<User, 'id' | 'role'>) => void;
     updateInstaller: (id: string, updates: Partial<User>) => void;
     deleteInstaller: (id: string) => void;
+    addVendor: (vendor: Omit<User, 'id' | 'role'>) => void;
+    updateVendor: (id: string, updates: Partial<User>) => void;
+    deleteVendor: (id: string) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -63,6 +67,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const isAdmin = () => user?.role === UserRole.ADMIN;
     const isInstaller = () => user?.role === UserRole.INSTALLER;
+    const isVendor = () => user?.role === UserRole.VENDOR;
 
     const addInstaller = (installer: Omit<User, 'id' | 'role'>) => {
         const newInstaller: User = {
@@ -81,6 +86,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUsers(prev => prev.filter(u => u.id !== id));
     };
 
+    const addVendor = (vendor: Omit<User, 'id' | 'role'>) => {
+        const newVendor: User = {
+            ...vendor,
+            id: Date.now().toString(),
+            role: UserRole.VENDOR,
+        };
+        setUsers(prev => [...prev, newVendor]);
+    };
+
+    const updateVendor = (id: string, updates: Partial<User>) => {
+        setUsers(prev => prev.map(u => u.id === id ? { ...u, ...updates } : u));
+    };
+
+    const deleteVendor = (id: string) => {
+        setUsers(prev => prev.filter(u => u.id !== id));
+    };
+
     return (
         <AuthContext.Provider value={{
             user,
@@ -89,9 +111,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             logout,
             isAdmin,
             isInstaller,
+            isVendor,
             addInstaller,
             updateInstaller,
-            deleteInstaller
+            deleteInstaller,
+            addVendor,
+            updateVendor,
+            deleteVendor
         }}>
             {children}
         </AuthContext.Provider>

@@ -1,0 +1,193 @@
+.vendor-view {
+    min-height: 100vh;
+    background: var(--bg-primary);
+    padding: var(--spacing-lg);
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.vendor-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-2xl);
+    padding: var(--spacing-lg);
+    background: var(--bg-glass);
+    backdrop-filter: blur(10px);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-color);
+}
+
+.vendor-header-content {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-lg);
+}
+
+.vendor-logo {
+    font-size: 3rem;
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.vendor-header h1 {
+    font-size: 1.75rem;
+    margin: 0;
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.vendor-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--spacing-lg);
+    margin-bottom: var(--spacing-2xl);
+}
+
+.stat-card-vendor {
+    padding: var(--spacing-xl);
+    text-align: center;
+}
+
+.stat-value-vendor {
+    font-size: 2.5rem;
+    font-weight: 700;
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1;
+    margin-bottom: var(--spacing-sm);
+}
+
+.stat-label-vendor {
+    color: var(--text-muted);
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.vendor-section-card {
+    padding: var(--spacing-2xl);
+    margin-bottom: var(--spacing-2xl);
+}
+
+.vendor-section-card h3 {
+    margin-bottom: var(--spacing-lg);
+}
+
+.meters-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: var(--spacing-md);
+}
+
+.meter-item-vendor {
+    padding: var(--spacing-lg);
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all var(--transition-fast);
+}
+
+.meter-item-vendor:hover {
+    background: var(--bg-card);
+    border-color: var(--accent-primary);
+    transform: translateY(-2px);
+}
+
+.meter-serial {
+    font-weight: 700;
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.installations-list-vendor {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+}
+
+.installation-item-vendor {
+    padding: var(--spacing-lg);
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color);
+    transition: all var(--transition-fast);
+}
+
+.installation-item-vendor:hover {
+    background: var(--bg-card);
+    border-color: var(--accent-primary);
+    transform: translateX(4px);
+}
+
+.installation-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-sm);
+}
+
+.meter-serial-vendor {
+    font-weight: 700;
+    font-size: 1.125rem;
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.installation-details-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: var(--spacing-xs);
+    font-size: 0.875rem;
+}
+
+.installation-address,
+.installation-date {
+    font-size: 0.813rem;
+    margin-top: var(--spacing-xs);
+}
+
+.no-data {
+    text-align: center;
+    padding: var(--spacing-2xl);
+}
+
+.no-data-icon {
+    font-size: 4rem;
+    margin-bottom: var(--spacing-md);
+    opacity: 0.5;
+}
+
+@media (max-width: 768px) {
+    .vendor-view {
+        padding: var(--spacing-md);
+    }
+
+    .vendor-header {
+        flex-direction: column;
+        gap: var(--spacing-md);
+        align-items: flex-start);
+    }
+
+    .vendor-stats {
+        grid-template-columns: 1fr;
+    }
+
+    .meters-grid {
+        grid-template-columns: 1fr;
+    }
+}

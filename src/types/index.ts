@@ -3,6 +3,7 @@
 export enum UserRole {
     ADMIN = 'ADMIN',
     INSTALLER = 'INSTALLER',
+    VENDOR = 'VENDOR',
 }
 
 export interface User {
@@ -10,6 +11,7 @@ export interface User {
     username: string;
     name: string;
     role: UserRole;
+    vendorId?: string; // Links to Vendor entity when role is VENDOR
 }
 
 export enum MeterStatus {
