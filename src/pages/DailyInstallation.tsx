@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { useMeterContext } from '../context/MeterContext';
 import { useAuth } from '../context/AuthContext';
+import { metersAPI, vendorsAPI, installationsAPI } from '../services/api';
 import { Button, Card, Input, TextArea, Select } from '../components/ui';
 import { InstallationStatus, UserRole } from '../types';
 import { mockInstallers } from '../utils/mockData';
 import './DailyInstallation.css';
 
 export const DailyInstallation: React.FC = () => {
-    const { meters, vendors, addInstallation } = useMeterContext();
+    const [vendors, setVendors] = useState<any[]>([]);
+    const [meters, setMeters] = useState<any[]>([]);
     const { user } = useAuth();
     const [formData, setFormData] = useState({
         installerName: '',
@@ -27,6 +28,23 @@ export const DailyInstallation: React.FC = () => {
     const [message, setMessage] = useState('');
     const [loading, setLoading] = useState(false);
 
+    // Fetch vendors and meters from API
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const [vendorsRes, metersRes] = await Promise.all([
+                    vendorsAPI.getAll(),
+                    metersAPI.getAll()
+                ]);
+                setVendors(vendorsRes.data);
+                setMeters(metersRes.data);
+            } catch (error) {
+                console.error('Failed to fetch data:', error);
+            }
+        };
+        fetchData();
+    }, []);
+
     // Auto-fill installer name if logged in as installer
     useEffect(() => {
         if (user?.role === UserRole.INSTALLER) {
@@ -37,6 +55,7 @@ export const DailyInstallation: React.FC = () => {
         }
     }, [user]);
 
+    // Filter meters that are assigned to vendors
     const assignedMeters = meters.filter(m => m.vendorId);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -75,7 +94,7 @@ export const DailyInstallation: React.FC = () => {
         }
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
         if (!formData.installerName || !formData.meterSerialNumber || !formData.consumerName || !gpsLocation) {
@@ -83,31 +102,38 @@ export const DailyInstallation: React.FC = () => {
             return;
         }
 
-        addInstallation({
-            ...formData,
-            gpsLocation,
-            installationDate: new Date(),
-            photosBefore: [],
-            photosAfter: [],
-        });
+        try {
+            await installationsAPI.create({
+                ...formData,
+                gpsLocation: {
+                    latitude: gpsLocation.latitude,
+                    longitude: gpsLocation.longitude
+                },
+                installationDate: new Date().toISOString(),
+                photosBefore: [],
+                photosAfter: [],
+            });
 
-        setMessage('✅ Installation logged successfully!');
+            setMessage('✅ Installation logged successfully!');
 
-        // Reset form
-        setFormData({
-            installerName: '',
-            vendorName: '',
-            meterSerialNumber: '',
-            consumerName: '',
-            consumerAddress: '',
-            oldMeterReading: '',
-            newMeterReading: '',
-            status: InstallationStatus.IN_TRANSIT,
-        });
-        setGpsLocation(null);
-        setPhotoFiles({ before: null, after: null });
+            // Reset form
+            setFormData({
+                installerName: user?.name || '',
+                vendorName: '',
+                meterSerialNumber: '',
+                consumerName: '',
+                consumerAddress: '',
+                oldMeterReading: '',
+                newMeterReading: '',
+                status: InstallationStatus.IN_TRANSIT,
+            });
+            setGpsLocation(null);
+            setPhotoFiles({ before: null, after: null });
 
-        setTimeout(() => setMessage(''), 3000);
+            setTimeout(() => setMessage(''), 3000);
+        } catch (error: any) {
+            setMessage(`❌ ${error.response?.data?.error || 'Failed to save installation'}`);
+        }
     };
 
     return (
@@ -146,7 +172,10 @@ export const DailyInstallation: React.FC = () => {
                             name="vendorName"
                             value={formData.vendorName}
                             onChange={handleInputChange}
-                            options={vendors.map(v => ({ value: v.name, label: v.name }))}
+                            options={[
+                                { value: '', label: 'Select...' },
+                                ...vendors.map(v => ({ value: v.name, label: v.name }))
+                            ]}
                         />
 
                         <Select
@@ -154,7 +183,10 @@ export const DailyInstallation: React.FC = () => {
                             name="meterSerialNumber"
                             value={formData.meterSerialNumber}
                             onChange={handleInputChange}
-                            options={assignedMeters.map(m => ({ value: m.serialNumber, label: m.serialNumber }))}
+                            options={[
+                                { value: '', label: 'Select...' },
+                                ...assignedMeters.map(m => ({ value: m.serialNumber, label: m.serialNumber }))
+                            ]}
                         />
 
                         <Input

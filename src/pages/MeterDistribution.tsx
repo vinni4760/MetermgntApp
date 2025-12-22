@@ -1,39 +1,66 @@
-import React, { useState } from 'react';
-import { useMeterContext } from '../context/MeterContext';
+import React, { useState, useEffect } from 'react';
+import { metersAPI, vendorsAPI } from '../services/api';
 import { Button, Card, Select, Input } from '../components/ui';
-import { MeterStatus } from '../types';
 import './MeterDistribution.css';
 
 export const MeterDistribution: React.FC = () => {
-    const { meters, vendors, assignMeterToVendor } = useMeterContext();
+    const [vendors, setVendors] = useState<any[]>([]);
+    const [stats, setStats] = useState({
+        totalMeters: 0,
+        availableMeters: 0,
+        installedMeters: 0,
+        vendorCount: 0
+    });
     const [selectedVendor, setSelectedVendor] = useState('');
-    const [meterSerialNumber, setMeterSerialNumber] = useState('');
     const [quantity, setQuantity] = useState('1');
     const [message, setMessage] = useState('');
+    const [loading, setLoading] = useState(false);
 
-    const availableMeters = meters.filter(m => m.status === MeterStatus.IN_STOCK);
+    // Fetch vendors and stats
+    const fetchData = async () => {
+        try {
+            const [vendorsResponse, statsResponse] = await Promise.all([
+                vendorsAPI.getAll(),
+                metersAPI.getStats()
+            ]);
 
-    const handleSubmit = (e: React.FormEvent) => {
+            setVendors(vendorsResponse.data);
+            setStats(statsResponse.data);
+        } catch (error) {
+            console.error('Failed to fetch data:', error);
+        }
+    };
+
+    useEffect(() => {
+        fetchData();
+    }, []);
+
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        if (!selectedVendor || !meterSerialNumber) {
-            setMessage('Please fill all required fields');
+        if (!selectedVendor || !quantity || parseInt(quantity) < 1) {
+            setMessage('❌ Please select vendor and enter valid quantity');
             return;
         }
 
-        const meter = meters.find(m => m.serialNumber === meterSerialNumber && m.status === MeterStatus.IN_STOCK);
+        setLoading(true);
+        try {
+            const response = await metersAPI.assign(selectedVendor, parseInt(quantity));
+            setMessage(`✅ Successfully assigned ${response.data.assigned} meters to vendor`);
 
-        if (!meter) {
-            setMessage('Meter not found or not available');
-            return;
+            // Refresh data
+            fetchData();
+
+            // Reset form
+            setSelectedVendor('');
+            setQuantity('1');
+
+            setTimeout(() => setMessage(''), 3000);
+        } catch (error: any) {
+            setMessage(`❌ ${error.response?.data?.error || 'Assignment failed'}`);
+        } finally {
+            setLoading(false);
         }
-
-        assignMeterToVendor(meter.id, selectedVendor);
-        setMessage(`✅ Successfully assigned ${meterSerialNumber} to vendor`);
-        setMeterSerialNumber('');
-
-        // Clear message after 3 seconds
-        setTimeout(() => setMessage(''), 3000);
     };
 
     return (
@@ -54,26 +81,20 @@ export const MeterDistribution: React.FC = () => {
                             label="Vendor *"
                             value={selectedVendor}
                             onChange={(e) => setSelectedVendor(e.target.value)}
-                            options={vendors.map(v => ({ value: v.id, label: v.name }))}
-                        />
-
-                        <Select
-                            label="Meter Serial Number *"
-                            value={meterSerialNumber}
-                            onChange={(e) => setMeterSerialNumber(e.target.value)}
-                            options={availableMeters.map(m => ({
-                                value: m.serialNumber,
-                                label: m.serialNumber
+                            options={vendors.map(v => ({
+                                value: v._id || v.id,
+                                label: v.name
                             }))}
                         />
 
                         <Input
-                            label="Quantity"
+                            label="Quantity *"
                             type="number"
                             min="1"
+                            max="1000"
                             value={quantity}
                             onChange={(e) => setQuantity(e.target.value)}
-                            placeholder="1"
+                            placeholder="Enter number of meters to assign"
                         />
 
                         {message && (
@@ -82,8 +103,8 @@ export const MeterDistribution: React.FC = () => {
                             </div>
                         )}
 
-                        <Button type="submit" variant="primary" size="lg">
-                            Assign Meter
+                        <Button type="submit" variant="primary" size="lg" disabled={loading}>
+                            {loading ? 'Assigning...' : 'Assign Meter'}
                         </Button>
                     </form>
                 </Card>
@@ -94,24 +115,24 @@ export const MeterDistribution: React.FC = () => {
 
                     <div className="summary-item">
                         <span>Available Meters:</span>
-                        <span className="summary-value">{availableMeters.length}</span>
+                        <span className="summary-value">{stats.availableMeters}</span>
                     </div>
 
                     <div className="summary-item">
                         <span>Total Vendors:</span>
-                        <span className="summary-value">{vendors.length}</span>
+                        <span className="summary-value">{stats.vendorCount}</span>
                     </div>
 
                     <div className="vendors-list">
                         <h4>Vendors</h4>
                         {vendors.map(vendor => (
-                            <div key={vendor.id} className="vendor-item">
+                            <div key={vendor._id || vendor.id} className="vendor-item">
                                 <div>
                                     <div className="vendor-name-small">{vendor.name}</div>
                                     <div className="vendor-contact text-muted">{vendor.contactNumber}</div>
                                 </div>
                                 <div className="vendor-assigned">
-                                    {meters.filter(m => m.vendorId === vendor.id).length} assigned
+                                    {vendor.assignedMetersCount || 0} assigned
                                 </div>
                             </div>
                         ))}
@@ -119,34 +140,16 @@ export const MeterDistribution: React.FC = () => {
                 </Card>
             </div>
 
-            {/* Recent Assignments */}
-            <Card className="recent-assignments">
-                <h3>Recent Assignments</h3>
-                <div className="assignments-table">
-                    <div className="table-header">
-                        <div>Serial Number</div>
-                        <div>Vendor</div>
-                        <div>Assigned Date</div>
-                        <div>Status</div>
-                    </div>
-                    {meters
-                        .filter(m => m.vendorId)
-                        .slice(-10)
-                        .reverse()
-                        .map(meter => (
-                            <div key={meter.id} className="table-row">
-                                <div className="meter-serial">{meter.serialNumber}</div>
-                                <div>{meter.vendorName}</div>
-                                <div className="text-muted">
-                                    {meter.assignedDate ? new Date(meter.assignedDate).toLocaleDateString() : '-'}
-                                </div>
-                                <div>
-                                    <span className={`status-badge status-${meter.status.toLowerCase()}`}>
-                                        {meter.status}
-                                    </span>
-                                </div>
-                            </div>
-                        ))}
+            {/* Info Card */}
+            <Card className="info-card">
+                <h3>📋 How Meter Assignment Works</h3>
+                <div className="info-content">
+                    <p>1. <strong>Select a vendor company</strong> from the dropdown</p>
+                    <p>2. <strong>Enter quantity</strong> of meters to assign</p>
+                    <p>3. System automatically generates unique serial numbers (MTR-00001, MTR-00002, etc.)</p>
+                    <p>4. Meters are created with status "AVAILABLE" in the database</p>
+                    <p>5. All users from that vendor company can now see these meters</p>
+                    <p>6. Installers can then install these meters at customer locations</p>
                 </div>
             </Card>
         </div>

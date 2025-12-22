@@ -61,6 +61,18 @@ export const metersAPI = {
         const response = await apiClient.get('/meters');
         return response.data;
     },
+    assign: async (vendorId: string, quantity: number) => {
+        const response = await apiClient.post('/meters/assign', { vendorId, quantity });
+        return response.data;
+    },
+    getStats: async () => {
+        const response = await apiClient.get('/meters/stats');
+        return response.data;
+    },
+    getByVendor: async (vendorId: string) => {
+        const response = await apiClient.get(`/meters/vendor/${vendorId}`);
+        return response.data;
+    },
 };
 
 // Vendors API

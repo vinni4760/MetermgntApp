@@ -1,41 +1,91 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { useMeterContext } from '../context/MeterContext';
-import { Card, Button, Badge } from '../components/ui';
-import type { Installation } from '../types';
-import { MeterStatus, InstallationStatus } from '../types';
+import { metersAPI, vendorsAPI } from '../services/api';
+import { Button, Card } from '../components/ui';
 import './VendorView.css';
 
 export const VendorView: React.FC = () => {
     const navigate = useNavigate();
     const { user, logout } = useAuth();
-    const { meters, installations, vendors } = useMeterContext();
-    const [selectedInstallation, setSelectedInstallation] = useState<Installation | null>(null);
+    const [meters, setMeters] = useState<any[]>([]);
+    const [vendorCompany, setVendorCompany] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
 
-    // Find vendor data
-    const vendor = vendors.find(v => v.id === user?.vendorId);
+    useEffect(() => {
+        const fetchData = async () => {
+            console.log('Full user object:', JSON.stringify(user, null, 2));
 
-    // Filter data for this vendor
-    const vendorMeters = meters.filter(m => m.vendorId === user?.vendorId);
-    const vendorInstallations = installations.filter(i =>
-        vendorMeters.some(m => m.serialNumber === i.meterSerialNumber)
-    );
+            if (!user?.vendorId) {
+                console.log('No vendorId found');
+                setLoading(false);
+                return;
+            }
+
+            // Extract vendorId properly - handle if it's an object
+            let vendorIdString = user.vendorId;
+            if (typeof vendorIdString === 'object' && vendorIdString !== null) {
+                vendorIdString = (vendorIdString as any)._id || (vendorIdString as any).id || String(vendorIdString);
+            }
+
+            console.log('Using vendorId string:', vendorIdString);
+
+            try {
+                // Fetch vendor company details
+                const vendorsResponse = await vendorsAPI.getAll();
+                console.log('All vendors:', vendorsResponse.data);
+
+                const company = vendorsResponse.data.find((v: any) =>
+                    v._id === vendorIdString || v.id === vendorIdString
+                );
+                console.log('Matched vendor company:', company);
+                setVendorCompany(company);
+
+                // Fetch meters for this vendor
+                console.log('Fetching meters for vendorId:', vendorIdString);
+                const metersResponse = await metersAPI.getByVendor(vendorIdString);
+                console.log('Meters response:', metersResponse);
+                setMeters(metersResponse.data || []);
+            } catch (error: any) {
+                console.error('Error details:', error.response?.data || error.message);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        if (user) {
+            fetchData();
+        }
+    }, [user]);
 
     const handleLogout = () => {
         logout();
         navigate('/login');
     };
 
+    if (loading) {
+        return (
+            <div className="vendor-view">
+                <div style={{ padding: '2rem', textAlign: 'center' }}>
+                    <p>Loading vendor dashboard...</p>
+                </div>
+            </div>
+        );
+    }
+
+    const availableMeters = meters.filter(m => m.status === 'AVAILABLE');
+    const installedMeters = meters.filter(m => m.status === 'INSTALLED');
+
     return (
         <div className="vendor-view">
-            {/* Header */}
             <div className="vendor-header">
                 <div className="vendor-header-content">
                     <div className="vendor-logo">🏢</div>
                     <div>
-                        <h1>{vendor?.name || user?.name}</h1>
-                        <p className="text-muted">Vendor Dashboard</p>
+                        <h1>{vendorCompany?.name || user?.name || 'Vendor'}</h1>
+                        <p className="text-muted">
+                            {vendorCompany ? `${user?.name} - Vendor Dashboard` : 'Vendor Dashboard'}
+                        </p>
                     </div>
                 </div>
                 <Button variant="outline" onClick={handleLogout} size="sm">
@@ -43,168 +93,63 @@ export const VendorView: React.FC = () => {
                 </Button>
             </div>
 
-            {/* Stats */}
             <div className="vendor-stats">
                 <Card className="stat-card-vendor">
-                    <div className="stat-value-vendor">{vendorMeters.length}</div>
+                    <div className="stat-value-vendor">{meters.length}</div>
                     <div className="stat-label-vendor">Total Assigned Meters</div>
                 </Card>
                 <Card className="stat-card-vendor">
-                    <div className="stat-value-vendor">
-                        {vendorMeters.filter(m => m.status === MeterStatus.IN_STOCK).length}
-                    </div>
-                    <div className="stat-label-vendor">In Stock</div>
+                    <div className="stat-value-vendor">{availableMeters.length}</div>
+                    <div className="stat-label-vendor">Available</div>
                 </Card>
                 <Card className="stat-card-vendor">
-                    <div className="stat-value-vendor">
-                        {vendorInstallations.filter(i => i.status === InstallationStatus.IN_TRANSIT).length}
-                    </div>
-                    <div className="stat-label-vendor">In Transit</div>
-                </Card>
-                <Card className="stat-card-vendor">
-                    <div className="stat-value-vendor">
-                        {vendorInstallations.filter(i => i.status === InstallationStatus.INSTALLED).length}
-                    </div>
+                    <div className="stat-value-vendor">{installedMeters.length}</div>
                     <div className="stat-label-vendor">Installed</div>
                 </Card>
             </div>
 
-            {/* Meters Section */}
             <Card className="vendor-section-card">
-                <h3>Assigned Meters</h3>
-                {vendorMeters.length > 0 ? (
+                <h3>Assigned Meters ({meters.length})</h3>
+                {meters.length > 0 ? (
                     <div className="meters-grid">
-                        {vendorMeters.map((meter) => (
-                            <div key={meter.id} className="meter-item-vendor">
-                                <div className="meter-serial">{meter.serialNumber}</div>
-                                <Badge variant={
-                                    meter.status === MeterStatus.INSTALLED ? 'success' :
-                                        meter.status === MeterStatus.IN_TRANSIT ? 'info' :
-                                            meter.status === MeterStatus.ASSIGNED ? 'warning' : 'default'
-                                }>
-                                    {meter.status.replace('_', ' ')}
-                                </Badge>
+                        {meters.slice(0, 50).map((meter: any) => (
+                            <div key={meter.id || meter._id} className="meter-item-vendor" style={{
+                                padding: '1rem',
+                                border: '1px solid var(--border-color)',
+                                borderRadius: '8px',
+                                background: 'var(--bg-card)'
+                            }}>
+                                <div className="meter-serial" style={{ fontWeight: 600, marginBottom: '0.5rem' }}>
+                                    {meter.serialNumber}
+                                </div>
+                                <div style={{
+                                    padding: '0.25rem 0.5rem',
+                                    borderRadius: '4px',
+                                    background: meter.status === 'AVAILABLE' ? 'var(--success)' : 'var(--info)',
+                                    color: 'white',
+                                    fontSize: '0.75rem',
+                                    display: 'inline-block'
+                                }}>
+                                    {meter.status}
+                                </div>
                             </div>
                         ))}
+                        {meters.length > 50 && (
+                            <p style={{ color: 'var(--text-secondary)', gridColumn: '1 / -1', textAlign: 'center' }}>
+                                Showing 50 of {meters.length} meters
+                            </p>
+                        )}
                     </div>
                 ) : (
                     <div className="no-data">
                         <div className="no-data-icon">📦</div>
                         <p>No meters assigned yet</p>
+                        <p className="text-muted" style={{ fontSize: '0.875rem', marginTop: '0.5rem' }}>
+                            Contact admin to assign meters to your company
+                        </p>
                     </div>
                 )}
             </Card>
-
-            {/* Installations Section */}
-            <Card className="vendor-section-card">
-                <h3>Recent Installations ({vendorInstallations.length})</h3>
-                {vendorInstallations.length > 0 ? (
-                    <div className="installations-list-vendor">
-                        {vendorInstallations.slice(-10).reverse().map((installation) => (
-                            <div
-                                key={installation.id}
-                                className="installation-item-vendor clickable"
-                                onClick={() => setSelectedInstallation(installation)}
-                            >
-                                <div className="installation-header-row">
-                                    <div className="meter-serial-vendor">{installation.meterSerialNumber}</div>
-                                    <Badge variant={installation.status === InstallationStatus.INSTALLED ? 'success' : 'info'}>
-                                        {installation.status.replace('_', ' ')}
-                                    </Badge>
-                                </div>
-                                <div className="installation-details-row">
-                                    <span className="text-muted">👤 {installation.installerName}</span>
-                                    <span className="text-muted">👥 {installation.consumerName}</span>
-                                </div>
-                                <div className="installation-address text-muted">
-                                    📍 {installation.consumerAddress}
-                                </div>
-                                <div className="installation-date text-muted">
-                                    📅 {new Date(installation.installationDate).toLocaleString()}
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                ) : (
-                    <div className="no-data">
-                        <div className="no-data-icon">📭</div>
-                        <p>No installations yet</p>
-                    </div>
-                )}
-            </Card>
-
-            {/* Installation Detail Modal */}
-            {selectedInstallation && (
-                <div className="modal-overlay" onClick={() => setSelectedInstallation(null)}>
-                    <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-                        <div className="modal-header">
-                            <h2>Installation Details</h2>
-                            <button className="modal-close" onClick={() => setSelectedInstallation(null)}>×</button>
-                        </div>
-                        <div className="modal-body">
-                            <div className="detail-row">
-                                <span className="detail-label">Meter Serial Number</span>
-                                <span className="detail-value">{selectedInstallation.meterSerialNumber}</span>
-                            </div>
-                            <div className="detail-row">
-                                <span className="detail-label">Status</span>
-                                <span className={`detail-value ${selectedInstallation.status === InstallationStatus.INSTALLED ? 'text-success' : 'text-info'}`}>
-                                    {selectedInstallation.status === InstallationStatus.INSTALLED ? '✓ Installed' : '🚚 In Transit'}
-                                </span>
-                            </div>
-                            <div className="detail-row">
-                                <span className="detail-label">Installer Name</span>
-                                <span className="detail-value">{selectedInstallation.installerName}</span>
-                            </div>
-                            <div className="detail-row">
-                                <span className="detail-label">Consumer Name</span>
-                                <span className="detail-value">{selectedInstallation.consumerName}</span>
-                            </div>
-                            <div className="detail-row">
-                                <span className="detail-label">Consumer Address</span>
-                                <span className="detail-value">{selectedInstallation.consumerAddress}</span>
-                            </div>
-                            <div className="detail-row">
-                                <span className="detail-label">Installation Date</span>
-                                <span className="detail-value">{new Date(selectedInstallation.installationDate).toLocaleString()}</span>
-                            </div>
-                            <div className="detail-row">
-                                <span className="detail-label">GPS Location</span>
-                                <div className="detail-value-with-button">
-                                    <span className="detail-value">
-                                        📍 {selectedInstallation.gpsLocation.latitude.toFixed(6)}, {selectedInstallation.gpsLocation.longitude.toFixed(6)}
-                                    </span>
-                                    <button
-                                        className="map-button"
-                                        onClick={() => {
-                                            const lat = selectedInstallation.gpsLocation.latitude;
-                                            const lng = selectedInstallation.gpsLocation.longitude;
-                                            window.open(`https://www.google.com/maps?q=${lat},${lng}`, '_blank');
-                                        }}
-                                    >
-                                        🗺️ View on Map
-                                    </button>
-                                </div>
-                            </div>
-                            {selectedInstallation.oldMeterReading && (
-                                <div className="detail-row">
-                                    <span className="detail-label">Old Meter Reading</span>
-                                    <span className="detail-value">{selectedInstallation.oldMeterReading}</span>
-                                </div>
-                            )}
-                            <div className="detail-row">
-                                <span className="detail-label">New Meter Reading</span>
-                                <span className="detail-value">{selectedInstallation.newMeterReading}</span>
-                            </div>
-                        </div>
-                        <div className="modal-footer">
-                            <Button variant="outline" onClick={() => setSelectedInstallation(null)}>
-                                Close
-                            </Button>
-                        </div>
-                    </div>
-                </div>
-            )}
         </div>
     );
 };

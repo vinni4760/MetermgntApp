@@ -65,11 +65,7 @@ router.post('/', protect, authorize('ADMIN'), async (req, res) => {
 // Update user (admin only)
 router.put('/:id', protect, authorize('ADMIN'), async (req, res) => {
     try {
-        const user = await User.findByIdAndUpdate(
-            req.params.id,
-            req.body,
-            { new: true, runValidators: true }
-        ).select('-password');
+        const user = await User.findById(req.params.id);
 
         if (!user) {
             return res.status(404).json({
@@ -78,18 +74,42 @@ router.put('/:id', protect, authorize('ADMIN'), async (req, res) => {
             });
         }
 
+        // Check for duplicate username if username is being changed
+        if (req.body.username && req.body.username !== user.username) {
+            const existingUser = await User.findOne({ username: req.body.username });
+            if (existingUser) {
+                return res.status(400).json({
+                    success: false,
+                    error: `Username '${req.body.username}' already exists`
+                });
+            }
+        }
+
+        // Update fields
+        Object.keys(req.body).forEach(key => {
+            user[key] = req.body[key];
+        });
+
+        // Save will trigger the pre-save hook to hash password if it was modified
+        await user.save();
+
+        // Remove password from response
+        const userResponse = user.toObject();
+        delete userResponse.password;
+
         res.json({
             success: true,
-            data: user
+            data: userResponse
         });
     } catch (error) {
         console.error('Update user error:', error);
 
-        // Handle duplicate username error
-        if (error.code === 11000 && error.keyPattern?.username) {
+        if (error.code === 11000) {
+            const field = Object.keys(error.keyPattern)[0];
+            const value = error.keyValue[field];
             return res.status(400).json({
                 success: false,
-                error: `Username "${req.body.username}" is already taken. Please choose a different username.`
+                error: `${field.charAt(0).toUpperCase() + field.slice(1)} '${value}' already exists`
             });
         }
 
