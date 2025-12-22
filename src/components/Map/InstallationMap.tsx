@@ -29,19 +29,22 @@ const createCustomIcon = (status: InstallationStatus) => {
 };
 
 export const InstallationMap: React.FC<InstallationMapProps> = ({ installations }) => {
-    // Calculate center based on installations
+    // Calculate map center - default to India if no installations
     const center: [number, number] = installations.length > 0
         ? [
             installations.reduce((sum, i) => sum + i.gpsLocation.latitude, 0) / installations.length,
-            installations.reduce((sum, i) => sum + i.gpsLocation.longitude, 0) / installations.length
+            installations.reduce((sum, i) => sum + i.gpsLocation.longitude, 0) / installations.length,
         ]
-        : [20.5937, 78.9629]; // Center of India as default
+        : [20.5937, 78.9629]; // Center of India
+
+    // Adjust zoom based on installations
+    const zoom = installations.length > 0 ? 6 : 5; // Zoom 5 for India view, 6 when installations exist
 
     return (
         <div className="installation-map-container">
             <MapContainer
                 center={center}
-                zoom={installations.length > 0 ? 6 : 5}
+                zoom={zoom}
                 style={{ height: '100%', width: '100%', borderRadius: '12px' }}
             >
                 <TileLayer

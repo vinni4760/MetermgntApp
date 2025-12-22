@@ -157,6 +157,41 @@
     opacity: 0.5;
 }
 
+.gps-row {
+    align-items: flex-start;
+}
+
+.gps-value-container {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: var(--spacing-sm);
+    flex: 1;
+}
+
+.gps-coords {
+    font-family: monospace;
+    font-size: 0.875rem;
+}
+
+.map-button-inline {
+    padding: var(--spacing-xs) var(--spacing-md);
+    background: var(--gradient-primary);
+    border: none;
+    border-radius: var(--radius-md);
+    color: white;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    white-space: nowrap;
+}
+
+.map-button-inline:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
 @media (max-width: 768px) {
     .installations-grid {
         grid-template-columns: 1fr;

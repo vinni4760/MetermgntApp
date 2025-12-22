@@ -20,21 +20,28 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         navigate('/login');
     };
 
-    const menuItems = [
-        { path: '/', label: 'Dashboard', icon: '📊' },
+    // Filter menu items based on role
+    const allMenuItems = [
+        { path: '/', label: 'Dashboard', icon: '📊', roles: ['ADMIN'] },
         {
             label: 'Meter Stock Management',
             icon: '📦',
+            roles: ['ADMIN'],
             submenu: [
                 { path: '/meter-distribution', label: 'Meter Distribution' },
                 { path: '/daily-installation', label: 'Daily Installation' },
                 { path: '/balance-count', label: 'Balance Count' },
             ]
         },
-        { path: '/meter-tracking', label: 'Meter Tracking', icon: '📍' },
-        { path: '/manage-installers', label: 'Manage Installers', icon: '👥' },
-        { path: '/manage-vendors', label: 'Manage Vendors', icon: '🏢' },
+        { path: '/meter-tracking', label: 'Meter Tracking', icon: '📍', roles: ['ADMIN'] },
+        { path: '/manage-installers', label: 'Manage Installers', icon: '👥', roles: ['ADMIN'] },
+        { path: '/manage-vendors', label: 'Manage Vendors', icon: '🏢', roles: ['ADMIN'] },
     ];
+
+    // Filter menu items by user role
+    const menuItems = allMenuItems.filter(item =>
+        !item.roles || item.roles.includes(user?.role || '')
+    );
 
     return (
         <div className="app-layout">

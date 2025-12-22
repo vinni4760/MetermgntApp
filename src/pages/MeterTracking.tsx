@@ -131,9 +131,21 @@ export const MeterTracking: React.FC = () => {
 
                                 <div className="detail-row gps-row">
                                     <span className="detail-label">🌍 GPS:</span>
-                                    <span className="detail-value gps-coords">
-                                        {installation.gpsLocation.latitude.toFixed(6)}, {installation.gpsLocation.longitude.toFixed(6)}
-                                    </span>
+                                    <div className="gps-value-container">
+                                        <span className="detail-value gps-coords">
+                                            {installation.gpsLocation.latitude.toFixed(6)}, {installation.gpsLocation.longitude.toFixed(6)}
+                                        </span>
+                                        <button
+                                            className="map-button-inline"
+                                            onClick={() => {
+                                                const lat = installation.gpsLocation.latitude;
+                                                const lng = installation.gpsLocation.longitude;
+                                                window.open(`https://www.google.com/maps?q=${lat},${lng}`, '_blank');
+                                            }}
+                                        >
+                                            🗺️ View on Map
+                                        </button>
+                                    </div>
                                 </div>
 
                                 {installation.newMeterReading && (
