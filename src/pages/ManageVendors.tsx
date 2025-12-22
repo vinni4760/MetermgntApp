@@ -1,92 +1,134 @@
-import React, { useState } from 'react';
-import { useAuth } from '../context/AuthContext';
-import { useMeterContext } from '../context/MeterContext';
-import { Card, Button, Input, Select } from '../components/ui';
-import { UserRole } from '../types';
+import React, { useState, useEffect } from 'react';
+import { usersAPI, vendorsAPI } from '../services/api';
+import { Card, Button, Input } from '../components/ui';
 import './ManageVendors.css';
 
 export const ManageVendors: React.FC = () => {
-    const { users, addVendor, updateVendor, deleteVendor } = useAuth();
-    const { vendors } = useMeterContext();
+    const [vendorUsers, setVendorUsers] = useState<any[]>([]);
+    const [vendorEntities, setVendorEntities] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
     const [showForm, setShowForm] = useState(false);
     const [editingId, setEditingId] = useState<string | null>(null);
     const [formData, setFormData] = useState({
         name: '',
         username: '',
+        password: '',
         vendorId: '',
     });
     const [message, setMessage] = useState('');
 
-    const vendorUsers = users.filter(u => u.role === UserRole.VENDOR);
+    // Fetch vendors
+    const fetchVendors = async () => {
+        try {
+            const [usersResponse, vendorsResponse] = await Promise.all([
+                usersAPI.getAll(),
+                vendorsAPI.getAll()
+            ]);
 
-    const handleSubmit = (e: React.FormEvent) => {
+            const vendors = usersResponse.data.filter((u: any) => u.role === 'VENDOR');
+            setVendorUsers(vendors);
+            setVendorEntities(vendorsResponse.data);
+        } catch (error) {
+            console.error('Failed to fetch vendors:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchVendors();
+    }, []);
+
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
         if (!formData.name || !formData.username || !formData.vendorId) {
-            setMessage('❌ Please fill all fields');
+            setMessage('❌ Please fill all required fields');
             return;
         }
 
-        // Check if username already exists
-        const usernameExists = users.some(u =>
-            u.username === formData.username && u.id !== editingId
-        );
-
-        if (usernameExists) {
-            setMessage('❌ Username already exists');
+        if (!editingId && !formData.password) {
+            setMessage('❌ Password is required for new vendors');
             return;
         }
 
-        if (editingId) {
-            updateVendor(editingId, formData);
-            setMessage('✅ Vendor updated successfully');
-        } else {
-            addVendor(formData);
-            setMessage('✅ Vendor added successfully');
-        }
+        try {
+            if (editingId) {
+                // Update existing vendor
+                const updates: any = {
+                    name: formData.name,
+                    username: formData.username,
+                    vendorId: formData.vendorId
+                };
+                if (formData.password) updates.password = formData.password;
 
-        // Reset form
-        setFormData({ name: '', username: '', vendorId: '' });
-        setShowForm(false);
-        setEditingId(null);
-        setTimeout(() => setMessage(''), 3000);
+                await usersAPI.update(editingId, updates);
+                setMessage('✅ Vendor updated successfully');
+            } else {
+                // Create new vendor
+                await usersAPI.create({
+                    ...formData,
+                    role: 'VENDOR'
+                });
+                setMessage('✅ Vendor added successfully');
+            }
+
+            // Reset form and refresh list
+            setFormData({ name: '', username: '', password: '', vendorId: '' });
+            setShowForm(false);
+            setEditingId(null);
+            fetchVendors();
+            setTimeout(() => setMessage(''), 3000);
+        } catch (error: any) {
+            setMessage(`❌ ${error.response?.data?.error || 'Operation failed'}`);
+        }
     };
 
     const handleEdit = (vendor: any) => {
         setFormData({
             name: vendor.name,
             username: vendor.username,
+            password: '',
             vendorId: vendor.vendorId || '',
         });
         setEditingId(vendor.id);
         setShowForm(true);
     };
 
-    const handleDelete = (id: string) => {
-        if (confirm('Are you sure you want to delete this vendor?')) {
-            deleteVendor(id);
+    const handleDelete = async (id: string) => {
+        if (!confirm('Are you sure you want to delete this vendor user?')) return;
+
+        try {
+            await usersAPI.delete(id);
             setMessage('✅ Vendor deleted successfully');
+            fetchVendors();
             setTimeout(() => setMessage(''), 3000);
+        } catch (error: any) {
+            setMessage(`❌ ${error.response?.data?.error || 'Delete failed'}`);
         }
     };
 
     const handleCancel = () => {
-        setFormData({ name: '', username: '', vendorId: '' });
+        setFormData({ name: '', username: '', password: '', vendorId: '' });
         setEditingId(null);
         setShowForm(false);
     };
 
-    const getVendorName = (vendorId?: string) => {
-        const vendor = vendors.find(v => v.id === vendorId);
-        return vendor?.name || 'Not linked';
+    const getVendorEntityName = (vendorId: string) => {
+        const entity = vendorEntities.find(v => v._id === vendorId || v.id === vendorId);
+        return entity ? entity.name : 'Unknown';
     };
+
+    if (loading) {
+        return <div className="manage-vendors"><div className="loading">Loading...</div></div>;
+    }
 
     return (
         <div className="manage-vendors fade-in">
             <div className="page-header">
                 <div>
                     <h2>Manage Vendors</h2>
-                    <p className="text-muted">Add, edit, and manage vendor accounts</p>
+                    <p className="text-muted">Add, edit, and manage vendor user accounts</p>
                 </div>
                 {!showForm && (
                     <Button onClick={() => setShowForm(true)} variant="primary">
@@ -103,14 +145,14 @@ export const ManageVendors: React.FC = () => {
 
             {showForm && (
                 <Card className="vendor-form-card">
-                    <h3>{editingId ? 'Edit Vendor' : 'Add New Vendor'}</h3>
+                    <h3>{editingId ? 'Edit Vendor User' : 'Add New Vendor User'}</h3>
                     <form onSubmit={handleSubmit} className="vendor-form">
                         <Input
-                            label="Vendor Company Name *"
+                            label="Full Name *"
                             name="name"
                             value={formData.name}
                             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                            placeholder="e.g., PowerGrid Corp"
+                            placeholder="e.g., PowerGrid Corp User"
                         />
                         <Input
                             label="Username *"
@@ -119,13 +161,27 @@ export const ManageVendors: React.FC = () => {
                             onChange={(e) => setFormData({ ...formData, username: e.target.value })}
                             placeholder="e.g., vendor1"
                         />
-                        <Select
-                            label="Link to Existing Vendor *"
-                            name="vendorId"
-                            value={formData.vendorId}
-                            onChange={(e) => setFormData({ ...formData, vendorId: e.target.value })}
-                            options={vendors.map(v => ({ value: v.id, label: v.name }))}
+                        <Input
+                            label={editingId ? "Password (leave blank to keep current)" : "Password *"}
+                            type="password"
+                            name="password"
+                            value={formData.password}
+                            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                            placeholder="Enter password"
                         />
+                        <div className="form-group">
+                            <label>Vendor Entity *</label>
+                            <select
+                                value={formData.vendorId}
+                                onChange={(e) => setFormData({ ...formData, vendorId: e.target.value })}
+                                className="form-select"
+                            >
+                                <option value="">Select Vendor Entity</option>
+                                {vendorEntities.map(v => (
+                                    <option key={v._id || v.id} value={v._id || v.id}>{v.name}</option>
+                                ))}
+                            </select>
+                        </div>
                         <div className="form-actions">
                             <Button type="button" variant="outline" onClick={handleCancel}>
                                 Cancel
@@ -139,14 +195,13 @@ export const ManageVendors: React.FC = () => {
             )}
 
             <Card className="vendors-list-card">
-                <h3>Current Vendors ({vendorUsers.length})</h3>
+                <h3>Current Vendor Users ({vendorUsers.length})</h3>
                 {vendorUsers.length > 0 ? (
                     <div className="vendors-table">
                         <div className="table-header">
-                            <div>Company Name</div>
+                            <div>Name</div>
                             <div>Username</div>
-                            <div>Linked Vendor</div>
-                            <div>ID</div>
+                            <div>Vendor Entity</div>
                             <div>Actions</div>
                         </div>
                         {vendorUsers.map((vendor) => (
@@ -156,8 +211,7 @@ export const ManageVendors: React.FC = () => {
                                     {vendor.name}
                                 </div>
                                 <div className="vendor-username">{vendor.username}</div>
-                                <div className="vendor-linked">{getVendorName(vendor.vendorId)}</div>
-                                <div className="vendor-id">{vendor.id}</div>
+                                <div className="vendor-entity">{getVendorEntityName(vendor.vendorId)}</div>
                                 <div className="table-actions">
                                     <button
                                         className="action-button edit-button"
@@ -178,7 +232,7 @@ export const ManageVendors: React.FC = () => {
                 ) : (
                     <div className="no-vendors">
                         <div className="no-vendors-icon">🏢</div>
-                        <p>No vendors added yet</p>
+                        <p>No vendor users added yet</p>
                         <p className="text-muted">Click "Add New Vendor" to get started</p>
                     </div>
                 )}

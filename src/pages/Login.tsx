@@ -1,43 +1,47 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Card, Button } from '../components/ui';
-import { UserRole } from '../types';
+import { authAPI } from '../services/api';
+import { Card } from '../components/ui';
 import './Login.css';
 
 export const Login: React.FC = () => {
-    const [selectedUser, setSelectedUser] = useState('');
+    const [username, setUsername] = useState('');
+    const [password, setPassword] = useState('');
     const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
-    const { login, users } = useAuth();
+    const { login: setAuthUser } = useAuth();
 
-    const handleLogin = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        setError('');
+        setLoading(true);
 
-        if (!selectedUser) {
-            setError('Please select a user');
-            return;
-        }
+        try {
+            const response = await authAPI.login(username, password);
 
-        const success = login(selectedUser);
-        if (success) {
-            const user = users.find(u => u.username === selectedUser);
-            // Redirect based on role
-            if (user?.role === UserRole.ADMIN) {
-                navigate('/');
-            } else if (user?.role === UserRole.INSTALLER) {
-                navigate('/installer');
-            } else if (user?.role === UserRole.VENDOR) {
-                navigate('/vendor');
+            if (response.success) {
+                // Set user in AuthContext (also saves to localStorage)
+                setAuthUser(response.token, response.user);
+
+                // Redirect based on role
+                const role = response.user.role;
+                if (role === 'ADMIN') {
+                    navigate('/');
+                } else if (role === 'INSTALLER') {
+                    navigate('/installer');
+                } else if (role === 'VENDOR') {
+                    navigate('/vendor');
+                }
             }
-        } else {
-            setError('Login failed');
+        } catch (err: any) {
+            console.error('Login error:', err);
+            setError(err.response?.data?.error || 'Login failed. Please try again.');
+        } finally {
+            setLoading(false);
         }
     };
-
-    const adminUsers = users.filter(u => u.role === UserRole.ADMIN);
-    const installerUsers = users.filter(u => u.role === UserRole.INSTALLER);
-    const vendorUsers = users.filter(u => u.role === UserRole.VENDOR);
 
     return (
         <div className="login-container">
@@ -45,72 +49,56 @@ export const Login: React.FC = () => {
                 <div className="login-header">
                     <div className="login-logo">⚡</div>
                     <h1>Meter Management System</h1>
-                    <p className="text-muted">Select your account to continue</p>
+                    <p className="text-muted">Sign in to continue</p>
                 </div>
 
                 <Card className="login-card">
-                    <form onSubmit={handleLogin}>
-                        <div className="user-selection">
-                            <h3>Admin Login</h3>
-                            <div className="user-grid">
-                                {adminUsers.map(user => (
-                                    <div
-                                        key={user.id}
-                                        className={`user-card ${selectedUser === user.username ? 'user-card-selected' : ''}`}
-                                        onClick={() => setSelectedUser(user.username)}
-                                    >
-                                        <div className="user-icon">👤</div>
-                                        <div className="user-name">{user.name}</div>
-                                        <div className="user-role-badge admin-badge">Admin</div>
-                                    </div>
-                                ))}
-                            </div>
+                    <form onSubmit={handleSubmit} className="login-form">
+                        <div className="form-group">
+                            <label htmlFor="username">Username</label>
+                            <input
+                                type="text"
+                                id="username"
+                                value={username}
+                                onChange={(e) => setUsername(e.target.value)}
+                                placeholder="Enter your username"
+                                required
+                                disabled={loading}
+                                className="form-input"
+                                autoFocus
+                            />
+                        </div>
 
-                            <h3 style={{ marginTop: 'var(--spacing-2xl)' }}>Installer Login</h3>
-                            <div className="user-grid">
-                                {installerUsers.map(user => (
-                                    <div
-                                        key={user.id}
-                                        className={`user-card ${selectedUser === user.username ? 'user-card-selected' : ''}`}
-                                        onClick={() => setSelectedUser(user.username)}
-                                    >
-                                        <div className="user-icon">🔧</div>
-                                        <div className="user-name">{user.name}</div>
-                                        <div className="user-role-badge installer-badge">Installer</div>
-                                    </div>
-                                ))}
-                            </div>
-
-                            <h3 style={{ marginTop: 'var(--spacing-2xl)' }}>Vendor Login</h3>
-                            <div className="user-grid">
-                                {vendorUsers.map(user => (
-                                    <div
-                                        key={user.id}
-                                        className={`user-card ${selectedUser === user.username ? 'user-card-selected' : ''}`}
-                                        onClick={() => setSelectedUser(user.username)}
-                                    >
-                                        <div className="user-icon">🏢</div>
-                                        <div className="user-name">{user.name}</div>
-                                        <div className="user-role-badge vendor-badge">Vendor</div>
-                                    </div>
-                                ))}
-                            </div>
+                        <div className="form-group">
+                            <label htmlFor="password">Password</label>
+                            <input
+                                type="password"
+                                id="password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                placeholder="Enter your password"
+                                required
+                                disabled={loading}
+                                className="form-input"
+                            />
                         </div>
 
                         {error && (
-                            <div className="login-error">
-                                {error}
-                            </div>
+                            <div className="login-error">{error}</div>
                         )}
 
-                        <Button type="submit" variant="primary" size="lg" className="login-button">
-                            Continue
-                        </Button>
+                        <button
+                            type="submit"
+                            className="login-button"
+                            disabled={loading}
+                        >
+                            {loading ? 'Signing in...' : 'Sign In'}
+                        </button>
                     </form>
                 </Card>
 
                 <p className="login-footer text-muted">
-                    Demo authentication - No password required
+                    Demo: admin / admin123
                 </p>
             </div>
         </div>

@@ -36,6 +36,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         { path: '/meter-tracking', label: 'Meter Tracking', icon: '📍', roles: ['ADMIN'] },
         { path: '/manage-installers', label: 'Manage Installers', icon: '👥', roles: ['ADMIN'] },
         { path: '/manage-vendors', label: 'Manage Vendors', icon: '🏢', roles: ['ADMIN'] },
+        { path: '/manage-vendor-entities', label: 'Manage Vendor Companies', icon: '🏭', roles: ['ADMIN'] },
     ];
 
     // Filter menu items by user role

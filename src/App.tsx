@@ -13,6 +13,7 @@ import { InstallerView } from './pages/InstallerView';
 import { VendorView } from './pages/VendorView';
 import { ManageInstallers } from './pages/ManageInstallers';
 import { ManageVendors } from './pages/ManageVendors';
+import { ManageVendorEntities } from './pages/ManageVendorEntities';
 import { UserRole } from './types';
 import './index.css';
 
@@ -133,6 +134,17 @@ function App() {
                 <ProtectedRoute allowedRoles={[UserRole.ADMIN]}>
                   <AppLayout>
                     <ManageVendors />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/manage-vendor-entities"
+              element={
+                <ProtectedRoute allowedRoles={[UserRole.ADMIN]}>
+                  <AppLayout>
+                    <ManageVendorEntities />
                   </AppLayout>
                 </ProtectedRoute>
               }

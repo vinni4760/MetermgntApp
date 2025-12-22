@@ -1,76 +1,110 @@
-import React, { useState } from 'react';
-import { useAuth } from '../context/AuthContext';
+import React, { useState, useEffect } from 'react';
+import { usersAPI } from '../services/api';
 import { Card, Button, Input } from '../components/ui';
-import { UserRole } from '../types';
 import './ManageInstallers.css';
 
 export const ManageInstallers: React.FC = () => {
-    const { users, addInstaller, updateInstaller, deleteInstaller } = useAuth();
+    const [installers, setInstallers] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
     const [showForm, setShowForm] = useState(false);
     const [editingId, setEditingId] = useState<string | null>(null);
     const [formData, setFormData] = useState({
         name: '',
         username: '',
+        password: '',
     });
     const [message, setMessage] = useState('');
 
-    const installers = users.filter(u => u.role === UserRole.INSTALLER);
+    // Fetch installers
+    const fetchInstallers = async () => {
+        try {
+            const response = await usersAPI.getAll();
+            const installerUsers = response.data.filter((u: any) => u.role === 'INSTALLER');
+            setInstallers(installerUsers);
+        } catch (error) {
+            console.error('Failed to fetch installers:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    useEffect(() => {
+        fetchInstallers();
+    }, []);
+
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
         if (!formData.name || !formData.username) {
-            setMessage('❌ Please fill all fields');
+            setMessage('❌ Please fill all required fields');
             return;
         }
 
-        // Check if username already exists
-        const usernameExists = users.some(u =>
-            u.username === formData.username && u.id !== editingId
-        );
-
-        if (usernameExists) {
-            setMessage('❌ Username already exists');
+        if (!editingId && !formData.password) {
+            setMessage('❌ Password is required for new installers');
             return;
         }
 
-        if (editingId) {
-            updateInstaller(editingId, formData);
-            setMessage('✅ Installer updated successfully');
-        } else {
-            addInstaller(formData);
-            setMessage('✅ Installer added successfully');
-        }
+        try {
+            if (editingId) {
+                // Update existing installer
+                const updates: any = { name: formData.name, username: formData.username };
+                if (formData.password) updates.password = formData.password;
 
-        // Reset form
-        setFormData({ name: '', username: '' });
-        setShowForm(false);
-        setEditingId(null);
-        setTimeout(() => setMessage(''), 3000);
+                await usersAPI.update(editingId, updates);
+                setMessage('✅ Installer updated successfully');
+            } else {
+                // Create new installer
+                await usersAPI.create({
+                    ...formData,
+                    role: 'INSTALLER'
+                });
+                setMessage('✅ Installer added successfully');
+            }
+
+            // Reset form and refresh list
+            setFormData({ name: '', username: '', password: '' });
+            setShowForm(false);
+            setEditingId(null);
+            fetchInstallers();
+            setTimeout(() => setMessage(''), 3000);
+        } catch (error: any) {
+            setMessage(`❌ ${error.response?.data?.error || 'Operation failed'}`);
+        }
     };
 
     const handleEdit = (installer: any) => {
         setFormData({
             name: installer.name,
             username: installer.username,
+            password: '',
         });
         setEditingId(installer.id);
         setShowForm(true);
     };
 
-    const handleDelete = (id: string) => {
-        if (confirm('Are you sure you want to delete this installer?')) {
-            deleteInstaller(id);
+    const handleDelete = async (id: string) => {
+        if (!confirm('Are you sure you want to delete this installer?')) return;
+
+        try {
+            await usersAPI.delete(id);
             setMessage('✅ Installer deleted successfully');
+            fetchInstallers();
             setTimeout(() => setMessage(''), 3000);
+        } catch (error: any) {
+            setMessage(`❌ ${error.response?.data?.error || 'Delete failed'}`);
         }
     };
 
     const handleCancel = () => {
-        setFormData({ name: '', username: '' });
+        setFormData({ name: '', username: '', password: '' });
         setEditingId(null);
         setShowForm(false);
     };
+
+    if (loading) {
+        return <div className="manage-installers"><div className="loading">Loading...</div></div>;
+    }
 
     return (
         <div className="manage-installers fade-in">
@@ -109,6 +143,14 @@ export const ManageInstallers: React.FC = () => {
                             value={formData.username}
                             onChange={(e) => setFormData({ ...formData, username: e.target.value })}
                             placeholder="e.g., rajesh"
+                        />
+                        <Input
+                            label={editingId ? "Password (leave blank to keep current)" : "Password *"}
+                            type="password"
+                            name="password"
+                            value={formData.password}
+                            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                            placeholder="Enter password"
                         />
                         <div className="form-actions">
                             <Button type="button" variant="outline" onClick={handleCancel}>
