@@ -1,14 +1,31 @@
-import React, { useState } from 'react';
-import { useMeterContext } from '../context/MeterContext';
+import React, { useState, useEffect } from 'react';
+import { installationsAPI } from '../services/api';
 import { Card, Badge, Select } from '../components/ui';
 import { InstallationStatus } from '../types';
 import { InstallationMap } from '../components/Map/InstallationMap';
 import './MeterTracking.css';
 
 export const MeterTracking: React.FC = () => {
-    const { installations } = useMeterContext();
+    const [installations, setInstallations] = useState<any[]>([]);
     const [statusFilter, setStatusFilter] = useState<string>('all');
     const [installerFilter, setInstallerFilter] = useState<string>('all');
+    const [loading, setLoading] = useState(true);
+    const [expandedCard, setExpandedCard] = useState<string | null>(null);
+
+    useEffect(() => {
+        const fetchInstallations = async () => {
+            try {
+                const response = await installationsAPI.getAll();
+                setInstallations(response.data);
+            } catch (error) {
+                console.error('Failed to fetch installations:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchInstallations();
+    }, []);
 
     const uniqueInstallers = Array.from(new Set(installations.map(i => i.installerName)));
 
@@ -17,6 +34,14 @@ export const MeterTracking: React.FC = () => {
         const matchesInstaller = installerFilter === 'all' || installation.installerName === installerFilter;
         return matchesStatus && matchesInstaller;
     });
+
+    if (loading) {
+        return (
+            <div className="meter-tracking fade-in">
+                <div style={{ padding: '2rem', textAlign: 'center' }}>Loading...</div>
+            </div>
+        );
+    }
 
     return (
         <div className="meter-tracking fade-in">
@@ -89,87 +114,120 @@ export const MeterTracking: React.FC = () => {
             {/* Installation Cards Grid */}
             <div className="installations-grid">
                 {filteredInstallations.length > 0 ? (
-                    filteredInstallations.map(installation => (
-                        <Card key={installation.id} className="installation-card">
-                            <div className="installation-card-header">
-                                <div className="meter-serial-large">{installation.meterSerialNumber}</div>
-                                <Badge
-                                    variant={installation.status === InstallationStatus.INSTALLED ? 'success' : 'info'}
-                                    pulse={installation.status === InstallationStatus.IN_TRANSIT}
-                                >
-                                    {installation.status.replace('_', ' ')}
-                                </Badge>
-                            </div>
-
-                            <div className="installation-details">
-                                <div className="detail-row">
-                                    <span className="detail-label">👤 Installer:</span>
-                                    <span className="detail-value">{installation.installerName}</span>
-                                </div>
-
-                                <div className="detail-row">
-                                    <span className="detail-label">🏢 Vendor:</span>
-                                    <span className="detail-value">{installation.vendorName || 'N/A'}</span>
-                                </div>
-
-                                <div className="detail-row">
-                                    <span className="detail-label">👥 Consumer:</span>
-                                    <span className="detail-value">{installation.consumerName}</span>
-                                </div>
-
-                                <div className="detail-row">
-                                    <span className="detail-label">📍 Address:</span>
-                                    <span className="detail-value">{installation.consumerAddress}</span>
-                                </div>
-
-                                <div className="detail-row">
-                                    <span className="detail-label">📅 Date:</span>
-                                    <span className="detail-value">
-                                        {new Date(installation.installationDate).toLocaleString()}
-                                    </span>
-                                </div>
-
-                                <div className="detail-row gps-row">
-                                    <span className="detail-label">🌍 GPS:</span>
-                                    <div className="gps-value-container">
-                                        <span className="detail-value gps-coords">
-                                            {installation.gpsLocation.latitude.toFixed(6)}, {installation.gpsLocation.longitude.toFixed(6)}
-                                        </span>
-                                        <button
-                                            className="map-button-inline"
-                                            onClick={() => {
-                                                const lat = installation.gpsLocation.latitude;
-                                                const lng = installation.gpsLocation.longitude;
-                                                window.open(`https://www.google.com/maps?q=${lat},${lng}`, '_blank');
-                                            }}
+                    filteredInstallations.map(installation => {
+                        const isExpanded = expandedCard === (installation.id || installation._id);
+                        return (
+                            <div
+                                key={installation.id || installation._id}
+                                onClick={() => setExpandedCard(isExpanded ? null : (installation.id || installation._id))}
+                                style={{ cursor: 'pointer' }}
+                            >
+                                <Card className="installation-card">
+                                    <div className="installation-card-header">
+                                        <div className="meter-serial-large">{installation.meterSerialNumber}</div>
+                                        <Badge
+                                            variant={installation.status === InstallationStatus.INSTALLED ? 'success' : 'info'}
+                                            pulse={installation.status === InstallationStatus.IN_TRANSIT}
                                         >
-                                            🗺️ View on Map
-                                        </button>
+                                            {installation.status.replace('_', ' ')}
+                                        </Badge>
                                     </div>
-                                </div>
 
-                                {installation.newMeterReading && (
-                                    <div className="detail-row">
-                                        <span className="detail-label">📊 New Reading:</span>
-                                        <span className="detail-value">{installation.newMeterReading}</span>
+                                    {/* Compact view - always visible */}
+                                    <div className="installation-summary">
+                                        <div className="detail-row">
+                                            <span className="detail-label">👥 Consumer:</span>
+                                            <span className="detail-value">{installation.consumerName}</span>
+                                        </div>
+                                        <div className="detail-row">
+                                            <span className="detail-label">👤 Installer:</span>
+                                            <span className="detail-value">{installation.installerName}</span>
+                                        </div>
                                     </div>
-                                )}
 
-                                {installation.oldMeterReading && (
-                                    <div className="detail-row">
-                                        <span className="detail-label">📊 Old Reading:</span>
-                                        <span className="detail-value">{installation.oldMeterReading}</span>
+                                    {/* Expanded details - shown on click */}
+                                    {isExpanded && (
+                                        <div className="installation-details">
+                                            <div className="detail-row">
+                                                <span className="detail-label">👤 Installer:</span>
+                                                <span className="detail-value">{installation.installerName}</span>
+                                            </div>
+
+                                            <div className="detail-row">
+                                                <span className="detail-label">🏢 Vendor:</span>
+                                                <span className="detail-value">{installation.vendorName || 'N/A'}</span>
+                                            </div>
+
+                                            <div className="detail-row">
+                                                <span className="detail-label">👥 Consumer:</span>
+                                                <span className="detail-value">{installation.consumerName}</span>
+                                            </div>
+
+                                            <div className="detail-row">
+                                                <span className="detail-label">📍 Address:</span>
+                                                <span className="detail-value">{installation.consumerAddress}</span>
+                                            </div>
+
+                                            <div className="detail-row">
+                                                <span className="detail-label">📅 Date:</span>
+                                                <span className="detail-value">
+                                                    {new Date(installation.installationDate).toLocaleString()}
+                                                </span>
+                                            </div>
+
+                                            {installation.gpsLocation && (
+                                                <div className="detail-row gps-row">
+                                                    <span className="detail-label">🌍 GPS:</span>
+                                                    <div className="gps-value-container">
+                                                        <span className="detail-value gps-coords">
+                                                            {installation.gpsLocation.latitude?.toFixed(6)}, {installation.gpsLocation.longitude?.toFixed(6)}
+                                                        </span>
+                                                        <button
+                                                            className="map-button-inline"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                const lat = installation.gpsLocation.latitude;
+                                                                const lng = installation.gpsLocation.longitude;
+                                                                window.open(`https://www.google.com/maps?q=${lat},${lng}`, '_blank');
+                                                            }}
+                                                        >
+                                                            🗺️ View on Map
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {installation.newMeterReading && (
+                                                <div className="detail-row">
+                                                    <span className="detail-label">📊 New Reading:</span>
+                                                    <span className="detail-value">{installation.newMeterReading}</span>
+                                                </div>
+                                            )}
+
+                                            {installation.oldMeterReading && (
+                                                <div className="detail-row">
+                                                    <span className="detail-label">📊 Old Reading:</span>
+                                                    <span className="detail-value">{installation.oldMeterReading}</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {/* Expand/Collapse indicator */}
+                                    <div className="installation-card-footer" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <span className="text-muted">
+                                            {isExpanded
+                                                ? `Logged ${installation.createdAt ? new Date(installation.createdAt).toLocaleDateString() : new Date(installation.installationDate).toLocaleDateString()}`
+                                                : 'Click to view details'}
+                                        </span>
+                                        <span style={{ fontSize: '1.2rem', color: 'var(--accent-primary)' }}>
+                                            {isExpanded ? '▲' : '▼'}
+                                        </span>
                                     </div>
-                                )}
+                                </Card>
                             </div>
-
-                            <div className="installation-card-footer">
-                                <span className="text-muted">
-                                    Logged {new Date(installation.createdAt).toLocaleDateString()}
-                                </span>
-                            </div>
-                        </Card>
-                    ))
+                        );
+                    })
                 ) : (
                     <div className="no-data">
                         <div className="no-data-icon">📭</div>
