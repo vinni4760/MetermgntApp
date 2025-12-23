@@ -16,6 +16,8 @@ export const ManageVendors: React.FC = () => {
         vendorId: '',
     });
     const [message, setMessage] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
+    const VENDORS_PER_PAGE = 10;
 
     // Fetch vendors
     const fetchVendors = async () => {
@@ -123,6 +125,13 @@ export const ManageVendors: React.FC = () => {
         return <div className="manage-vendors"><div className="loading">Loading...</div></div>;
     }
 
+    // Pagination
+    const totalPages = Math.ceil(vendorUsers.length / VENDORS_PER_PAGE);
+    const paginatedVendors = vendorUsers.slice(
+        (currentPage - 1) * VENDORS_PER_PAGE,
+        currentPage * VENDORS_PER_PAGE
+    );
+
     return (
         <div className="manage-vendors fade-in">
             <div className="page-header">
@@ -204,7 +213,7 @@ export const ManageVendors: React.FC = () => {
                             <div>Vendor Entity</div>
                             <div>Actions</div>
                         </div>
-                        {vendorUsers.map((vendor) => (
+                        {paginatedVendors.map((vendor) => (
                             <div key={vendor.id} className="table-row">
                                 <div className="vendor-name">
                                     <span className="vendor-icon">🏢</span>
@@ -228,6 +237,43 @@ export const ManageVendors: React.FC = () => {
                                 </div>
                             </div>
                         ))}
+                        {totalPages > 1 && (
+                            <div style={{ padding: '1rem', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem' }}>
+                                <button
+                                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                    disabled={currentPage === 1}
+                                    style={{
+                                        padding: '0.5rem 1rem',
+                                        background: currentPage === 1 ? 'var(--bg-secondary)' : 'var(--accent-primary)',
+                                        color: currentPage === 1 ? 'var(--text-secondary)' : 'white',
+                                        border: 'none',
+                                        borderRadius: '6px',
+                                        cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+                                        fontSize: '0.875rem'
+                                    }}
+                                >
+                                    ← Previous
+                                </button>
+                                <span style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
+                                    Page {currentPage} of {totalPages}
+                                </span>
+                                <button
+                                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                    disabled={currentPage === totalPages}
+                                    style={{
+                                        padding: '0.5rem 1rem',
+                                        background: currentPage === totalPages ? 'var(--bg-secondary)' : 'var(--accent-primary)',
+                                        color: currentPage === totalPages ? 'var(--text-secondary)' : 'white',
+                                        border: 'none',
+                                        borderRadius: '6px',
+                                        cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
+                                        fontSize: '0.875rem'
+                                    }}
+                                >
+                                    Next →
+                                </button>
+                            </div>
+                        )}
                     </div>
                 ) : (
                     <div className="no-vendors">

@@ -14,6 +14,8 @@ export const ManageInstallers: React.FC = () => {
         password: '',
     });
     const [message, setMessage] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
+    const INSTALLERS_PER_PAGE = 10;
 
     // Fetch installers
     const fetchInstallers = async () => {
@@ -106,6 +108,13 @@ export const ManageInstallers: React.FC = () => {
         return <div className="manage-installers"><div className="loading">Loading...</div></div>;
     }
 
+    // Pagination
+    const totalPages = Math.ceil(installers.length / INSTALLERS_PER_PAGE);
+    const paginatedInstallers = installers.slice(
+        (currentPage - 1) * INSTALLERS_PER_PAGE,
+        currentPage * INSTALLERS_PER_PAGE
+    );
+
     return (
         <div className="manage-installers fade-in">
             <div className="page-header">
@@ -174,7 +183,7 @@ export const ManageInstallers: React.FC = () => {
                             <div>ID</div>
                             <div>Actions</div>
                         </div>
-                        {installers.map((installer) => (
+                        {paginatedInstallers.map((installer) => (
                             <div key={installer.id} className="table-row">
                                 <div className="installer-name">
                                     <span className="installer-icon">🔧</span>
@@ -198,6 +207,43 @@ export const ManageInstallers: React.FC = () => {
                                 </div>
                             </div>
                         ))}
+                        {totalPages > 1 && (
+                            <div style={{ padding: '1rem', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem' }}>
+                                <button
+                                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                    disabled={currentPage === 1}
+                                    style={{
+                                        padding: '0.5rem 1rem',
+                                        background: currentPage === 1 ? 'var(--bg-secondary)' : 'var(--accent-primary)',
+                                        color: currentPage === 1 ? 'var(--text-secondary)' : 'white',
+                                        border: 'none',
+                                        borderRadius: '6px',
+                                        cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+                                        fontSize: '0.875rem'
+                                    }}
+                                >
+                                    ← Previous
+                                </button>
+                                <span style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
+                                    Page {currentPage} of {totalPages}
+                                </span>
+                                <button
+                                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                    disabled={currentPage === totalPages}
+                                    style={{
+                                        padding: '0.5rem 1rem',
+                                        background: currentPage === totalPages ? 'var(--bg-secondary)' : 'var(--accent-primary)',
+                                        color: currentPage === totalPages ? 'var(--text-secondary)' : 'white',
+                                        border: 'none',
+                                        borderRadius: '6px',
+                                        cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
+                                        fontSize: '0.875rem'
+                                    }}
+                                >
+                                    Next →
+                                </button>
+                            </div>
+                        )}
                     </div>
                 ) : (
                     <div className="no-installers">

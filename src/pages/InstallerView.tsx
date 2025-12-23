@@ -11,6 +11,8 @@ export const InstallerView: React.FC = () => {
     const [installations, setInstallations] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedInstallation, setSelectedInstallation] = useState<any>(null);
+    const [currentPage, setCurrentPage] = useState(1);
+    const INSTALLATIONS_PER_PAGE = 5;
 
     useEffect(() => {
         const fetchInstallations = async () => {
@@ -70,6 +72,13 @@ export const InstallerView: React.FC = () => {
         inst => inst.status === 'INSTALLED' || inst.status === 'COMPLETED'
     );
 
+    // Pagination
+    const totalPages = Math.ceil(installations.length / INSTALLATIONS_PER_PAGE);
+    const paginatedInstallations = installations.slice(
+        (currentPage - 1) * INSTALLATIONS_PER_PAGE,
+        currentPage * INSTALLATIONS_PER_PAGE
+    );
+
     return (
         <div className="installer-view">
             <div className="installer-header">
@@ -109,40 +118,38 @@ export const InstallerView: React.FC = () => {
             <Card className="installer-section-card">
                 <h3>Recent Installations ({installations.length})</h3>
                 {installations.length > 0 ? (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                        {installations.slice(-10).reverse().map((inst: any) => (
-                            <div
-                                key={inst.id || inst._id}
-                                onClick={() => handleViewDetails(inst)}
-                                style={{
-                                    padding: '1rem',
-                                    border: '1px solid var(--border-color)',
-                                    borderRadius: '8px',
-                                    background: 'var(--bg-card)',
-                                    cursor: 'pointer',
-                                    transition: 'all 0.2s ease'
-                                }}
-                                onMouseEnter={(e) => {
-                                    e.currentTarget.style.borderColor = 'var(--accent-primary)';
-                                    e.currentTarget.style.transform = 'translateY(-2px)';
-                                }}
-                                onMouseLeave={(e) => {
-                                    e.currentTarget.style.borderColor = 'var(--border-color)';
-                                    e.currentTarget.style.transform = 'translateY(0)';
-                                }}
-                            >
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '0.5rem' }}>
-                                    <div>
-                                        <div style={{ fontWeight: 600, fontSize: '1.1rem' }}>
-                                            {inst.meterSerialNumber || 'N/A'}
-                                        </div>
-                                        <div style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
-                                            Consumer: {inst.consumerName}
-                                        </div>
+                    <>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                            {paginatedInstallations.map((inst: any) => (
+                                <div
+                                    key={inst.id || inst._id}
+                                    onClick={() => handleViewDetails(inst)}
+                                    style={{
+                                        padding: '1rem 1.25rem',
+                                        border: '1px solid var(--border-color)',
+                                        borderRadius: '8px',
+                                        background: 'var(--bg-card)',
+                                        cursor: 'pointer',
+                                        transition: 'all 0.2s ease',
+                                        display: 'flex',
+                                        justifyContent: 'space-between',
+                                        alignItems: 'center'
+                                    }}
+                                    onMouseEnter={(e) => {
+                                        e.currentTarget.style.background = 'var(--bg-tertiary)';
+                                        e.currentTarget.style.borderColor = 'var(--accent-primary)';
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        e.currentTarget.style.background = 'var(--bg-card)';
+                                        e.currentTarget.style.borderColor = 'var(--border-color)';
+                                    }}
+                                >
+                                    <div style={{ fontWeight: 600, fontSize: '1rem' }}>
+                                        {inst.meterSerialNumber || 'N/A'}
                                     </div>
                                     <div style={{
-                                        padding: '0.25rem 0.75rem',
-                                        borderRadius: '4px',
+                                        padding: '0.35rem 0.85rem',
+                                        borderRadius: '6px',
                                         background: inst.status === 'INSTALLED' ? 'var(--success)' : 'var(--warning)',
                                         color: 'white',
                                         fontSize: '0.75rem',
@@ -151,17 +158,46 @@ export const InstallerView: React.FC = () => {
                                         {inst.status || 'PENDING'}
                                     </div>
                                 </div>
-                                <div style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
-                                    📍 {inst.consumerAddress}
-                                </div>
-                                {inst.installationDate && (
-                                    <div style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', marginTop: '0.5rem' }}>
-                                        🗓️ {new Date(inst.installationDate).toLocaleDateString()}
-                                    </div>
-                                )}
+                            ))}
+                        </div>
+                        {totalPages > 1 && (
+                            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginTop: '1.5rem', gap: '0.5rem' }}>
+                                <button
+                                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                    disabled={currentPage === 1}
+                                    style={{
+                                        padding: '0.5rem 1rem',
+                                        background: currentPage === 1 ? 'var(--bg-secondary)' : 'var(--accent-primary)',
+                                        color: currentPage === 1 ? 'var(--text-secondary)' : 'white',
+                                        border: 'none',
+                                        borderRadius: '6px',
+                                        cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+                                        fontSize: '0.875rem'
+                                    }}
+                                >
+                                    ← Previous
+                                </button>
+                                <span style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
+                                    Page {currentPage} of {totalPages}
+                                </span>
+                                <button
+                                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                    disabled={currentPage === totalPages}
+                                    style={{
+                                        padding: '0.5rem 1rem',
+                                        background: currentPage === totalPages ? 'var(--bg-secondary)' : 'var(--accent-primary)',
+                                        color: currentPage === totalPages ? 'var(--text-secondary)' : 'white',
+                                        border: 'none',
+                                        borderRadius: '6px',
+                                        cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
+                                        fontSize: '0.875rem'
+                                    }}
+                                >
+                                    Next →
+                                </button>
                             </div>
-                        ))}
-                    </div>
+                        )}
+                    </>
                 ) : (
                     <div className="no-data">
                         <div className="no-data-icon">📋</div>

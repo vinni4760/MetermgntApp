@@ -29,6 +29,8 @@ export const DailyInstallation: React.FC = () => {
     const [message, setMessage] = useState('');
     const [loading, setLoading] = useState(false);
     const [selectedInstallation, setSelectedInstallation] = useState<any>(null);
+    const [installationsPage, setInstallationsPage] = useState(1);
+    const INSTALLATIONS_PER_PAGE = 15;
 
     // Fetch vendors, meters, and installations from API
     useEffect(() => {
@@ -184,6 +186,13 @@ export const DailyInstallation: React.FC = () => {
             setMessage(`❌ ${error.response?.data?.error || 'Failed to save installation'}`);
         }
     };
+
+    // Pagination for installations
+    const totalPages = Math.ceil(installations.length / INSTALLATIONS_PER_PAGE);
+    const paginatedInstallations = installations.slice(
+        (installationsPage - 1) * INSTALLATIONS_PER_PAGE,
+        installationsPage * INSTALLATIONS_PER_PAGE
+    );
 
     return (
         <div className="daily-installation fade-in">
@@ -394,7 +403,7 @@ export const DailyInstallation: React.FC = () => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {installations.map((installation: any) => (
+                                {paginatedInstallations.map((installation: any) => (
                                     <tr
                                         key={installation._id || installation.id}
                                         onClick={() => setSelectedInstallation(installation)}
@@ -447,6 +456,43 @@ export const DailyInstallation: React.FC = () => {
                             </tbody>
                         </table>
                     </div>
+                    {totalPages > 1 && (
+                        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginTop: '1.5rem', gap: '0.5rem' }}>
+                            <button
+                                onClick={() => setInstallationsPage(p => Math.max(1, p - 1))}
+                                disabled={installationsPage === 1}
+                                style={{
+                                    padding: '0.5rem 1rem',
+                                    background: installationsPage === 1 ? 'var(--bg-secondary)' : 'var(--accent-primary)',
+                                    color: installationsPage === 1 ? 'var(--text-secondary)' : 'white',
+                                    border: 'none',
+                                    borderRadius: '6px',
+                                    cursor: installationsPage === 1 ? 'not-allowed' : 'pointer',
+                                    fontSize: '0.875rem'
+                                }}
+                            >
+                                ← Previous
+                            </button>
+                            <span style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
+                                Page {installationsPage} of {totalPages}
+                            </span>
+                            <button
+                                onClick={() => setInstallationsPage(p => Math.min(totalPages, p + 1))}
+                                disabled={installationsPage === totalPages}
+                                style={{
+                                    padding: '0.5rem 1rem',
+                                    background: installationsPage === totalPages ? 'var(--bg-secondary)' : 'var(--accent-primary)',
+                                    color: installationsPage === totalPages ? 'var(--text-secondary)' : 'white',
+                                    border: 'none',
+                                    borderRadius: '6px',
+                                    cursor: installationsPage === totalPages ? 'not-allowed' : 'pointer',
+                                    fontSize: '0.875rem'
+                                }}
+                            >
+                                Next →
+                            </button>
+                        </div>
+                    )}
                 </Card>
             )}
 
