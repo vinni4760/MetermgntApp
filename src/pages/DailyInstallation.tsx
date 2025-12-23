@@ -55,14 +55,24 @@ export const DailyInstallation: React.FC = () => {
         }
     }, [user]);
 
-    // Filter meters that are assigned to vendors
-    const assignedMeters = meters.filter(m => m.vendorId);
+
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-        setFormData({
-            ...formData,
-            [e.target.name]: e.target.value,
-        });
+        const { name, value } = e.target;
+
+        // Clear meter selection when vendor changes
+        if (name === 'vendorName') {
+            setFormData({
+                ...formData,
+                vendorName: value,
+                meterSerialNumber: '', // Reset meter when vendor changes
+            });
+        } else {
+            setFormData({
+                ...formData,
+                [name]: value,
+            });
+        }
     };
 
     const captureGPS = () => {
@@ -168,12 +178,12 @@ export const DailyInstallation: React.FC = () => {
                         )}
 
                         <Select
-                            label="Vendor Name"
+                            label="Vendor Name *"
                             name="vendorName"
                             value={formData.vendorName}
                             onChange={handleInputChange}
                             options={[
-                                { value: '', label: 'Select...' },
+                                { value: '', label: 'Select Vendor First...' },
                                 ...vendors.map(v => ({ value: v.name, label: v.name }))
                             ]}
                         />
@@ -183,9 +193,25 @@ export const DailyInstallation: React.FC = () => {
                             name="meterSerialNumber"
                             value={formData.meterSerialNumber}
                             onChange={handleInputChange}
+                            disabled={!formData.vendorName}
                             options={[
-                                { value: '', label: 'Select...' },
-                                ...assignedMeters.map(m => ({ value: m.serialNumber, label: m.serialNumber }))
+                                { value: '', label: formData.vendorName ? 'Select Meter...' : 'Select Vendor First' },
+                                ...meters
+                                    .filter(m => {
+                                        // Find the vendor object
+                                        const vendor = vendors.find(v => v.name === formData.vendorName);
+                                        if (!vendor) return false;
+
+                                        // Check if meter belongs to selected vendor AND is AVAILABLE
+                                        const vendorMatches = m.vendorId?._id === vendor._id || m.vendorId?.id === vendor._id || m.vendorId === vendor._id;
+                                        const isAvailable = m.status === 'AVAILABLE';
+
+                                        return vendorMatches && isAvailable;
+                                    })
+                                    .map(m => ({
+                                        value: m.serialNumber,
+                                        label: `${m.serialNumber} - Available`
+                                    }))
                             ]}
                         />
 
