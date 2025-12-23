@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { metersAPI, vendorsAPI } from '../services/api';
+import { metersAPI, vendorsAPI, installationsAPI } from '../services/api';
 import { Button, Card } from '../components/ui';
 import './VendorView.css';
 
@@ -9,8 +9,10 @@ export const VendorView: React.FC = () => {
     const navigate = useNavigate();
     const { user, logout } = useAuth();
     const [meters, setMeters] = useState<any[]>([]);
+    const [installations, setInstallations] = useState<any[]>([]);
     const [vendorCompany, setVendorCompany] = useState<any>(null);
     const [loading, setLoading] = useState(true);
+    const [statusFilter, setStatusFilter] = useState<string>('all');
 
     useEffect(() => {
         const fetchData = async () => {
@@ -46,6 +48,15 @@ export const VendorView: React.FC = () => {
                 const metersResponse = await metersAPI.getByVendor(vendorIdString);
                 console.log('Meters response:', metersResponse);
                 setMeters(metersResponse.data || []);
+
+                // Fetch installations and filter by vendor's meters
+                const installationsResponse = await installationsAPI.getAll();
+                const meterSerials = (metersResponse.data || []).map((m: any) => m.serialNumber);
+                const vendorInstallations = installationsResponse.data.filter(
+                    (i: any) => meterSerials.includes(i.meterSerialNumber)
+                );
+                console.log('Vendor installations:', vendorInstallations.length);
+                setInstallations(vendorInstallations);
             } catch (error: any) {
                 console.error('Error details:', error.response?.data || error.message);
             } finally {
@@ -75,6 +86,11 @@ export const VendorView: React.FC = () => {
 
     const availableMeters = meters.filter(m => m.status === 'AVAILABLE');
     const installedMeters = meters.filter(m => m.status === 'INSTALLED');
+
+    // Filter installations by status
+    const filteredInstallations = statusFilter === 'all'
+        ? installations
+        : installations.filter(i => i.status === statusFilter);
 
     return (
         <div className="vendor-view">
@@ -146,6 +162,114 @@ export const VendorView: React.FC = () => {
                         <p>No meters assigned yet</p>
                         <p className="text-muted" style={{ fontSize: '0.875rem', marginTop: '0.5rem' }}>
                             Contact admin to assign meters to your company
+                        </p>
+                    </div>
+                )}
+            </Card>
+
+            {/* Installations Section */}
+            <Card className="vendor-section-card">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                    <h3 style={{ margin: 0 }}>Installations ({installations.length})</h3>
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        <button
+                            onClick={() => setStatusFilter('all')}
+                            style={{
+                                padding: '0.5rem 1rem',
+                                background: statusFilter === 'all' ? 'var(--accent-primary)' : 'var(--bg-secondary)',
+                                color: statusFilter === 'all' ? 'white' : 'var(--text-secondary)',
+                                border: 'none',
+                                borderRadius: '6px',
+                                cursor: 'pointer',
+                                fontSize: '0.875rem',
+                                fontWeight: 500
+                            }}
+                        >
+                            All ({installations.length})
+                        </button>
+                        <button
+                            onClick={() => setStatusFilter('IN_TRANSIT')}
+                            style={{
+                                padding: '0.5rem 1rem',
+                                background: statusFilter === 'IN_TRANSIT' ? 'var(--accent-primary)' : 'var(--bg-secondary)',
+                                color: statusFilter === 'IN_TRANSIT' ? 'white' : 'var(--text-secondary)',
+                                border: 'none',
+                                borderRadius: '6px',
+                                cursor: 'pointer',
+                                fontSize: '0.875rem',
+                                fontWeight: 500
+                            }}
+                        >
+                            In Transit ({installations.filter(i => i.status === 'IN_TRANSIT').length})
+                        </button>
+                        <button
+                            onClick={() => setStatusFilter('INSTALLED')}
+                            style={{
+                                padding: '0.5rem 1rem',
+                                background: statusFilter === 'INSTALLED' ? 'var(--accent-primary)' : 'var(--bg-secondary)',
+                                color: statusFilter === 'INSTALLED' ? 'white' : 'var(--text-secondary)',
+                                border: 'none',
+                                borderRadius: '6px',
+                                cursor: 'pointer',
+                                fontSize: '0.875rem',
+                                fontWeight: 500
+                            }}
+                        >
+                            Installed ({installations.filter(i => i.status === 'INSTALLED').length})
+                        </button>
+                    </div>
+                </div>
+
+                {filteredInstallations.length > 0 ? (
+                    <div style={{ overflowX: 'auto' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                            <thead>
+                                <tr style={{ borderBottom: '2px solid var(--border-color)', textAlign: 'left' }}>
+                                    <th style={{ padding: '0.75rem' }}>Meter Serial</th>
+                                    <th style={{ padding: '0.75rem' }}>Consumer</th>
+                                    <th style={{ padding: '0.75rem' }}>Address</th>
+                                    <th style={{ padding: '0.75rem' }}>Installer</th>
+                                    <th style={{ padding: '0.75rem' }}>Status</th>
+                                    <th style={{ padding: '0.75rem' }}>Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {filteredInstallations.map((installation: any) => (
+                                    <tr key={installation._id || installation.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                                        <td style={{ padding: '0.75rem', fontWeight: 600 }}>{installation.meterSerialNumber}</td>
+                                        <td style={{ padding: '0.75rem' }}>{installation.consumerName}</td>
+                                        <td style={{ padding: '0.75rem', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                            {installation.consumerAddress}
+                                        </td>
+                                        <td style={{ padding: '0.75rem' }}>{installation.installerName}</td>
+                                        <td style={{ padding: '0.75rem' }}>
+                                            <span style={{
+                                                padding: '0.25rem 0.5rem',
+                                                borderRadius: '4px',
+                                                background: installation.status === 'INSTALLED' ? 'var(--success)' : 'var(--warning)',
+                                                color: 'white',
+                                                fontSize: '0.75rem'
+                                            }}>
+                                                {installation.status === 'IN_TRANSIT' ? 'In Transit' : 'Installed'}
+                                            </span>
+                                        </td>
+                                        <td style={{ padding: '0.75rem', color: 'var(--text-secondary)' }}>
+                                            {new Date(installation.installationDate || installation.createdAt).toLocaleDateString()}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                ) : (
+                    <div className="no-data">
+                        <div className="no-data-icon">📍</div>
+                        <p>No installations found</p>
+                        <p className="text-muted" style={{ fontSize: '0.875rem', marginTop: '0.5rem' }}>
+                            {statusFilter === 'all'
+                                ? 'No installations have been created yet'
+                                : `No installations with status: ${statusFilter === 'IN_TRANSIT' ? 'In Transit' : 'Installed'}`
+                            }
                         </p>
                     </div>
                 )}
