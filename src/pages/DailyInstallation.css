@@ -5,6 +5,7 @@
 
 .installation-form-container {
     padding: var(--spacing-2xl);
+    margin-bottom: var(--spacing-2xl);
 }
 
 .installation-form-container h3 {

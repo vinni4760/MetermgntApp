@@ -67,6 +67,70 @@ router.post('/', protect, async (req, res) => {
     }
 });
 
+// Update installation status
+router.put('/:id', protect, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { status } = req.body;
+
+        if (!status) {
+            return res.status(400).json({
+                success: false,
+                error: 'Status is required'
+            });
+        }
+
+        // Find the installation
+        const installation = await Installation.findById(id);
+        if (!installation) {
+            return res.status(404).json({
+                success: false,
+                error: 'Installation not found'
+            });
+        }
+
+        // Update installation status
+        installation.status = status;
+        await installation.save();
+
+        // Update meter status based on new installation status
+        if (installation.meterSerialNumber) {
+            let meterStatus = 'INSTALLED';
+            if (status === 'IN_TRANSIT') {
+                meterStatus = 'ASSIGNED_TO_INSTALLER';
+            }
+
+            const updateResult = await Meter.findOneAndUpdate(
+                { serialNumber: installation.meterSerialNumber },
+                {
+                    status: meterStatus,
+                    installationId: installation._id,
+                    installerId: req.user._id
+                },
+                { new: true }
+            );
+
+            if (updateResult) {
+                console.log(`Updated meter ${installation.meterSerialNumber} to status: ${meterStatus}`);
+            } else {
+                console.error('Failed to update meter status for:', installation.meterSerialNumber);
+            }
+        }
+
+        res.json({
+            success: true,
+            data: installation,
+            message: 'Installation updated successfully'
+        });
+    } catch (error) {
+        console.error('Update installation error:', error);
+        res.status(400).json({
+            success: false,
+            error: error.message || 'Failed to update installation'
+        });
+    }
+});
+
 // Fix existing installations - sync meter statuses (admin only)
 router.post('/sync-meter-statuses', protect, async (req, res) => {
     try {

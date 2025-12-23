@@ -53,6 +53,10 @@ export const installationsAPI = {
         const response = await apiClient.post('/installations', data);
         return response.data;
     },
+    update: async (id: string, data: any) => {
+        const response = await apiClient.put(`/installations/${id}`, data);
+        return response.data;
+    },
 };
 
 // Meters API

@@ -9,6 +9,7 @@ import './DailyInstallation.css';
 export const DailyInstallation: React.FC = () => {
     const [vendors, setVendors] = useState<any[]>([]);
     const [meters, setMeters] = useState<any[]>([]);
+    const [installations, setInstallations] = useState<any[]>([]);
     const { user } = useAuth();
     const [formData, setFormData] = useState({
         installerName: '',
@@ -28,22 +29,33 @@ export const DailyInstallation: React.FC = () => {
     const [message, setMessage] = useState('');
     const [loading, setLoading] = useState(false);
 
-    // Fetch vendors and meters from API
+    // Fetch vendors, meters, and installations from API
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const [vendorsRes, metersRes] = await Promise.all([
+                const [vendorsRes, metersRes, installationsRes] = await Promise.all([
                     vendorsAPI.getAll(),
-                    metersAPI.getAll()
+                    metersAPI.getAll(),
+                    installationsAPI.getAll()
                 ]);
                 setVendors(vendorsRes.data);
                 setMeters(metersRes.data);
+
+                // Filter installations for current installer if logged in as installer
+                if (user?.role === UserRole.INSTALLER) {
+                    const myInstallations = installationsRes.data.filter(
+                        (i: any) => i.installerName === user.name
+                    );
+                    setInstallations(myInstallations);
+                } else {
+                    setInstallations(installationsRes.data);
+                }
             } catch (error) {
                 console.error('Failed to fetch data:', error);
             }
         };
         fetchData();
-    }, []);
+    }, [user]);
 
     // Auto-fill installer name if logged in as installer
     useEffect(() => {
@@ -100,6 +112,32 @@ export const DailyInstallation: React.FC = () => {
             );
         } else {
             setMessage('❌ Geolocation not supported');
+            setLoading(false);
+        }
+    };
+
+    const handleUpdateStatus = async (installationId: string, newStatus: string) => {
+        try {
+            setLoading(true);
+            await installationsAPI.update(installationId, { status: newStatus });
+
+            setMessage('✅ Installation status updated successfully!');
+
+            // Refresh installations list
+            const installationsRes = await installationsAPI.getAll();
+            if (user?.role === UserRole.INSTALLER) {
+                const myInstallations = installationsRes.data.filter(
+                    (i: any) => i.installerName === user.name
+                );
+                setInstallations(myInstallations);
+            } else {
+                setInstallations(installationsRes.data);
+            }
+
+            setTimeout(() => setMessage(''), 3000);
+        } catch (error: any) {
+            setMessage(`❌ ${error.response?.data?.error || 'Failed to update installation'}`);
+        } finally {
             setLoading(false);
         }
     };
@@ -335,6 +373,65 @@ export const DailyInstallation: React.FC = () => {
                     </div>
                 </form>
             </Card>
+
+            {/* My Installations List */}
+            {installations.length > 0 && (
+                <Card className="installation-form-container">
+                    <h3 style={{ marginTop: '0' }}>My Installations ({installations.length})</h3>
+                    <div style={{ overflowX: 'auto' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '1rem' }}>
+                            <thead>
+                                <tr style={{ borderBottom: '2px solid var(--border-color)', textAlign: 'left' }}>
+                                    <th style={{ padding: '0.75rem' }}>Meter Serial</th>
+                                    <th style={{ padding: '0.75rem' }}>Consumer</th>
+                                    <th style={{ padding: '0.75rem' }}>Vendor</th>
+                                    <th style={{ padding: '0.75rem' }}>Status</th>
+                                    <th style={{ padding: '0.75rem' }}>Date</th>
+                                    <th style={{ padding: '0.75rem' }}>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {installations.map((installation: any) => (
+                                    <tr key={installation._id || installation.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                                        <td style={{ padding: '0.75rem', fontWeight: 600 }}>{installation.meterSerialNumber}</td>
+                                        <td style={{ padding: '0.75rem' }}>{installation.consumerName}</td>
+                                        <td style={{ padding: '0.75rem' }}>{installation.vendorName}</td>
+                                        <td style={{ padding: '0.75rem' }}>
+                                            <span style={{
+                                                padding: '0.25rem 0.5rem',
+                                                borderRadius: '4px',
+                                                background: installation.status === 'INSTALLED' ? 'var(--success)' : 'var(--warning)',
+                                                color: 'white',
+                                                fontSize: '0.75rem'
+                                            }}>
+                                                {installation.status === 'IN_TRANSIT' ? 'In Transit' : 'Installed'}
+                                            </span>
+                                        </td>
+                                        <td style={{ padding: '0.75rem', color: 'var(--text-secondary)' }}>
+                                            {new Date(installation.installationDate || installation.createdAt).toLocaleDateString()}
+                                        </td>
+                                        <td style={{ padding: '0.75rem' }}>
+                                            {installation.status === 'IN_TRANSIT' && (
+                                                <Button
+                                                    onClick={() => handleUpdateStatus(installation._id || installation.id, 'INSTALLED')}
+                                                    variant="primary"
+                                                    size="sm"
+                                                    disabled={loading}
+                                                >
+                                                    Mark as Installed
+                                                </Button>
+                                            )}
+                                            {installation.status === 'INSTALLED' && (
+                                                <span style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>Complete</span>
+                                            )}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </Card>
+            )}
         </div>
     );
 };
