@@ -28,6 +28,7 @@ export const DailyInstallation: React.FC = () => {
     });
     const [message, setMessage] = useState('');
     const [loading, setLoading] = useState(false);
+    const [selectedInstallation, setSelectedInstallation] = useState<any>(null);
 
     // Fetch vendors, meters, and installations from API
     useEffect(() => {
@@ -377,7 +378,9 @@ export const DailyInstallation: React.FC = () => {
             {/* My Installations List */}
             {installations.length > 0 && (
                 <Card className="installation-form-container">
-                    <h3 style={{ marginTop: '0' }}>My Installations ({installations.length})</h3>
+                    <h3 style={{ marginTop: '0' }}>
+                        {user?.role === UserRole.INSTALLER ? 'My Installations' : 'All Installations'} ({installations.length})
+                    </h3>
                     <div style={{ overflowX: 'auto' }}>
                         <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '1rem' }}>
                             <thead>
@@ -392,7 +395,21 @@ export const DailyInstallation: React.FC = () => {
                             </thead>
                             <tbody>
                                 {installations.map((installation: any) => (
-                                    <tr key={installation._id || installation.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                                    <tr
+                                        key={installation._id || installation.id}
+                                        onClick={() => setSelectedInstallation(installation)}
+                                        style={{
+                                            borderBottom: '1px solid var(--border-color)',
+                                            cursor: 'pointer',
+                                            transition: 'background 0.2s'
+                                        }}
+                                        onMouseEnter={(e) => {
+                                            e.currentTarget.style.background = 'var(--bg-tertiary)';
+                                        }}
+                                        onMouseLeave={(e) => {
+                                            e.currentTarget.style.background = 'transparent';
+                                        }}
+                                    >
                                         <td style={{ padding: '0.75rem', fontWeight: 600 }}>{installation.meterSerialNumber}</td>
                                         <td style={{ padding: '0.75rem' }}>{installation.consumerName}</td>
                                         <td style={{ padding: '0.75rem' }}>{installation.vendorName}</td>
@@ -410,7 +427,7 @@ export const DailyInstallation: React.FC = () => {
                                         <td style={{ padding: '0.75rem', color: 'var(--text-secondary)' }}>
                                             {new Date(installation.installationDate || installation.createdAt).toLocaleDateString()}
                                         </td>
-                                        <td style={{ padding: '0.75rem' }}>
+                                        <td style={{ padding: '0.75rem' }} onClick={(e) => e.stopPropagation()}>
                                             {installation.status === 'IN_TRANSIT' && (
                                                 <Button
                                                     onClick={() => handleUpdateStatus(installation._id || installation.id, 'INSTALLED')}
@@ -431,6 +448,169 @@ export const DailyInstallation: React.FC = () => {
                         </table>
                     </div>
                 </Card>
+            )}
+
+            {/* Installation Details Modal */}
+            {selectedInstallation && (
+                <div
+                    onClick={() => setSelectedInstallation(null)}
+                    style={{
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        background: 'rgba(0, 0, 0, 0.85)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        zIndex: 1000,
+                        padding: '1rem',
+                        backdropFilter: 'blur(4px)'
+                    }}
+                >
+                    <div
+                        onClick={(e) => e.stopPropagation()}
+                        style={{
+                            background: '#1a1d2e',
+                            borderRadius: '12px',
+                            padding: '1.25rem',
+                            maxWidth: '480px',
+                            width: '100%',
+                            maxHeight: '80vh',
+                            overflowY: 'auto',
+                            boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
+                            border: '1px solid rgba(255,255,255,0.1)'
+                        }}
+                    >
+                        {/* Modal Header */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                            <h3 style={{ margin: 0, color: 'var(--accent-primary)' }}>Installation Details</h3>
+                            <button
+                                onClick={() => setSelectedInstallation(null)}
+                                style={{
+                                    background: 'none',
+                                    border: 'none',
+                                    fontSize: '1.5rem',
+                                    cursor: 'pointer',
+                                    color: 'var(--text-secondary)',
+                                    padding: '0',
+                                    lineHeight: 1
+                                }}
+                            >
+                                ×
+                            </button>
+                        </div>
+
+                        {/* Modal Content */}
+                        <div style={{ display: 'grid', gap: '1rem' }}>
+                            <div>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>Meter Serial Number</div>
+                                <div style={{ fontWeight: 600, fontSize: '1.1rem' }}>{selectedInstallation.meterSerialNumber}</div>
+                            </div>
+                            <div>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>Status</div>
+                                <span style={{
+                                    padding: '0.25rem 0.75rem',
+                                    borderRadius: '4px',
+                                    background: selectedInstallation.status === 'INSTALLED' ? 'var(--success)' : 'var(--warning)',
+                                    color: 'white',
+                                    fontSize: '0.875rem',
+                                    display: 'inline-block'
+                                }}>
+                                    {selectedInstallation.status === 'IN_TRANSIT' ? 'In Transit' : 'Installed'}
+                                </span>
+                            </div>
+                            <div>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>Consumer Name</div>
+                                <div style={{ fontWeight: 500 }}>{selectedInstallation.consumerName}</div>
+                            </div>
+                            <div>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>Consumer Address</div>
+                                <div>{selectedInstallation.consumerAddress}</div>
+                            </div>
+                            <div>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>Installer</div>
+                                <div>{selectedInstallation.installerName}</div>
+                            </div>
+                            <div>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>Vendor</div>
+                                <div>{selectedInstallation.vendorName}</div>
+                            </div>
+                            <div>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>Installation Date</div>
+                                <div>{new Date(selectedInstallation.installationDate || selectedInstallation.createdAt).toLocaleDateString('en-US', {
+                                    year: 'numeric',
+                                    month: 'long',
+                                    day: 'numeric'
+                                })}</div>
+                            </div>
+                            {selectedInstallation.gpsLocation && (
+                                <div>
+                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>GPS Location</div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                        <div style={{ fontFamily: 'monospace', fontSize: '0.9rem' }}>
+                                            {selectedInstallation.gpsLocation.latitude.toFixed(6)}, {selectedInstallation.gpsLocation.longitude.toFixed(6)}
+                                        </div>
+                                        <button
+                                            onClick={() => {
+                                                const lat = selectedInstallation.gpsLocation.latitude;
+                                                const lng = selectedInstallation.gpsLocation.longitude;
+                                                window.open(`https://www.google.com/maps?q=${lat},${lng}`, '_blank');
+                                            }}
+                                            style={{
+                                                padding: '0.4rem 0.75rem',
+                                                background: 'var(--accent-primary)',
+                                                color: 'white',
+                                                border: 'none',
+                                                borderRadius: '6px',
+                                                fontSize: '0.75rem',
+                                                fontWeight: 500,
+                                                cursor: 'pointer',
+                                                transition: 'opacity 0.2s',
+                                                whiteSpace: 'nowrap'
+                                            }}
+                                            onMouseEnter={(e) => e.currentTarget.style.opacity = '0.9'}
+                                            onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
+                                        >
+                                            📍 View on Map
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                            {selectedInstallation.oldMeterReading && (
+                                <div>
+                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>Old Meter Reading</div>
+                                    <div>{selectedInstallation.oldMeterReading}</div>
+                                </div>
+                            )}
+                            {selectedInstallation.newMeterReading && (
+                                <div>
+                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>New Meter Reading</div>
+                                    <div>{selectedInstallation.newMeterReading}</div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Modal Footer */}
+                        <div style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'flex-end' }}>
+                            <button
+                                onClick={() => setSelectedInstallation(null)}
+                                style={{
+                                    padding: '0.5rem 1.5rem',
+                                    background: 'var(--bg-secondary)',
+                                    color: 'var(--text-primary)',
+                                    border: '1px solid var(--border-color)',
+                                    borderRadius: '6px',
+                                    cursor: 'pointer',
+                                    fontSize: '0.875rem'
+                                }}
+                            >
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     );

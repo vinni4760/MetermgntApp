@@ -14,6 +14,10 @@ export const VendorView: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [statusFilter, setStatusFilter] = useState<string>('all');
     const [selectedInstallation, setSelectedInstallation] = useState<any>(null);
+    const [metersPage, setMetersPage] = useState(1);
+    const [installationsPage, setInstallationsPage] = useState(1);
+    const METERS_PER_PAGE = 12;
+    const INSTALLATIONS_PER_PAGE = 15;
 
     useEffect(() => {
         const fetchData = async () => {
@@ -70,6 +74,11 @@ export const VendorView: React.FC = () => {
         }
     }, [user]);
 
+    // Reset to page 1 when filter changes
+    useEffect(() => {
+        setInstallationsPage(1);
+    }, [statusFilter]);
+
     const handleLogout = () => {
         logout();
         navigate('/login');
@@ -88,10 +97,26 @@ export const VendorView: React.FC = () => {
     const availableMeters = meters.filter(m => m.status === 'AVAILABLE');
     const installedMeters = meters.filter(m => m.status === 'INSTALLED');
 
+    // Pagination for meters
+    const totalMetersPages = Math.ceil(meters.length / METERS_PER_PAGE);
+    const paginatedMeters = meters.slice(
+        (metersPage - 1) * METERS_PER_PAGE,
+        metersPage * METERS_PER_PAGE
+    );
+
     // Filter installations by status
     const filteredInstallations = statusFilter === 'all'
         ? installations
         : installations.filter(i => i.status === statusFilter);
+
+    // Pagination for installations
+    const totalInstallationsPages = Math.ceil(filteredInstallations.length / INSTALLATIONS_PER_PAGE);
+    const paginatedInstallations = filteredInstallations.slice(
+        (installationsPage - 1) * INSTALLATIONS_PER_PAGE,
+        installationsPage * INSTALLATIONS_PER_PAGE
+    );
+
+
 
     return (
         <div className="vendor-view">
@@ -128,35 +153,69 @@ export const VendorView: React.FC = () => {
             <Card className="vendor-section-card">
                 <h3>Assigned Meters ({meters.length})</h3>
                 {meters.length > 0 ? (
-                    <div className="meters-grid">
-                        {meters.slice(0, 50).map((meter: any) => (
-                            <div key={meter.id || meter._id} className="meter-item-vendor" style={{
-                                padding: '1rem',
-                                border: '1px solid var(--border-color)',
-                                borderRadius: '8px',
-                                background: 'var(--bg-card)'
-                            }}>
-                                <div className="meter-serial" style={{ fontWeight: 600, marginBottom: '0.5rem' }}>
-                                    {meter.serialNumber}
-                                </div>
-                                <div style={{
-                                    padding: '0.25rem 0.5rem',
-                                    borderRadius: '4px',
-                                    background: meter.status === 'AVAILABLE' ? 'var(--success)' : 'var(--info)',
-                                    color: 'white',
-                                    fontSize: '0.75rem',
-                                    display: 'inline-block'
+                    <>
+                        <div className="meters-grid">
+                            {paginatedMeters.map((meter: any) => (
+                                <div key={meter.id || meter._id} className="meter-item-vendor" style={{
+                                    padding: '1rem',
+                                    border: '1px solid var(--border-color)',
+                                    borderRadius: '8px',
+                                    background: 'var(--bg-card)'
                                 }}>
-                                    {meter.status}
+                                    <div className="meter-serial" style={{ fontWeight: 600, marginBottom: '0.5rem' }}>
+                                        {meter.serialNumber}
+                                    </div>
+                                    <div style={{
+                                        padding: '0.25rem 0.5rem',
+                                        borderRadius: '4px',
+                                        background: meter.status === 'AVAILABLE' ? 'var(--success)' : 'var(--info)',
+                                        color: 'white',
+                                        fontSize: '0.75rem',
+                                        display: 'inline-block'
+                                    }}>
+                                        {meter.status}
+                                    </div>
                                 </div>
+                            ))}
+                        </div>
+                        {totalMetersPages > 1 && (
+                            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginTop: '1.5rem', gap: '0.5rem' }}>
+                                <button
+                                    onClick={() => setMetersPage(p => Math.max(1, p - 1))}
+                                    disabled={metersPage === 1}
+                                    style={{
+                                        padding: '0.5rem 1rem',
+                                        background: metersPage === 1 ? 'var(--bg-secondary)' : 'var(--accent-primary)',
+                                        color: metersPage === 1 ? 'var(--text-secondary)' : 'white',
+                                        border: 'none',
+                                        borderRadius: '6px',
+                                        cursor: metersPage === 1 ? 'not-allowed' : 'pointer',
+                                        fontSize: '0.875rem'
+                                    }}
+                                >
+                                    ← Previous
+                                </button>
+                                <span style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
+                                    Page {metersPage} of {totalMetersPages}
+                                </span>
+                                <button
+                                    onClick={() => setMetersPage(p => Math.min(totalMetersPages, p + 1))}
+                                    disabled={metersPage === totalMetersPages}
+                                    style={{
+                                        padding: '0.5rem 1rem',
+                                        background: metersPage === totalMetersPages ? 'var(--bg-secondary)' : 'var(--accent-primary)',
+                                        color: metersPage === totalMetersPages ? 'var(--text-secondary)' : 'white',
+                                        border: 'none',
+                                        borderRadius: '6px',
+                                        cursor: metersPage === totalMetersPages ? 'not-allowed' : 'pointer',
+                                        fontSize: '0.875rem'
+                                    }}
+                                >
+                                    Next →
+                                </button>
                             </div>
-                        ))}
-                        {meters.length > 50 && (
-                            <p style={{ color: 'var(--text-secondary)', gridColumn: '1 / -1', textAlign: 'center' }}>
-                                Showing 50 of {meters.length} meters
-                            </p>
                         )}
-                    </div>
+                    </>
                 ) : (
                     <div className="no-data">
                         <div className="no-data-icon">📦</div>
@@ -222,60 +281,99 @@ export const VendorView: React.FC = () => {
                 </div>
 
                 {filteredInstallations.length > 0 ? (
-                    <div style={{ overflowX: 'auto' }}>
-                        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                            <thead>
-                                <tr style={{ borderBottom: '2px solid var(--border-color)', textAlign: 'left' }}>
-                                    <th style={{ padding: '0.75rem' }}>Meter Serial</th>
-                                    <th style={{ padding: '0.75rem' }}>Consumer</th>
-                                    <th style={{ padding: '0.75rem' }}>Address</th>
-                                    <th style={{ padding: '0.75rem' }}>Installer</th>
-                                    <th style={{ padding: '0.75rem' }}>Status</th>
-                                    <th style={{ padding: '0.75rem' }}>Date</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {filteredInstallations.map((installation: any) => (
-                                    <tr
-                                        key={installation._id || installation.id}
-                                        onClick={() => setSelectedInstallation(installation)}
-                                        style={{
-                                            borderBottom: '1px solid var(--border-color)',
-                                            cursor: 'pointer',
-                                            transition: 'background 0.2s'
-                                        }}
-                                        onMouseEnter={(e) => {
-                                            e.currentTarget.style.background = 'var(--bg-tertiary)';
-                                        }}
-                                        onMouseLeave={(e) => {
-                                            e.currentTarget.style.background = 'transparent';
-                                        }}
-                                    >
-                                        <td style={{ padding: '0.75rem', fontWeight: 600 }}>{installation.meterSerialNumber}</td>
-                                        <td style={{ padding: '0.75rem' }}>{installation.consumerName}</td>
-                                        <td style={{ padding: '0.75rem', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                            {installation.consumerAddress}
-                                        </td>
-                                        <td style={{ padding: '0.75rem' }}>{installation.installerName}</td>
-                                        <td style={{ padding: '0.75rem' }}>
-                                            <span style={{
-                                                padding: '0.25rem 0.5rem',
-                                                borderRadius: '4px',
-                                                background: installation.status === 'INSTALLED' ? 'var(--success)' : 'var(--warning)',
-                                                color: 'white',
-                                                fontSize: '0.75rem'
-                                            }}>
-                                                {installation.status === 'IN_TRANSIT' ? 'In Transit' : 'Installed'}
-                                            </span>
-                                        </td>
-                                        <td style={{ padding: '0.75rem', color: 'var(--text-secondary)' }}>
-                                            {new Date(installation.installationDate || installation.createdAt).toLocaleDateString()}
-                                        </td>
+                    <>
+                        <div style={{ overflowX: 'auto' }}>
+                            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                <thead>
+                                    <tr style={{ borderBottom: '2px solid var(--border-color)', textAlign: 'left' }}>
+                                        <th style={{ padding: '0.75rem' }}>Meter Serial</th>
+                                        <th style={{ padding: '0.75rem' }}>Consumer</th>
+                                        <th style={{ padding: '0.75rem' }}>Address</th>
+                                        <th style={{ padding: '0.75rem' }}>Installer</th>
+                                        <th style={{ padding: '0.75rem' }}>Status</th>
+                                        <th style={{ padding: '0.75rem' }}>Date</th>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
+                                </thead>
+                                <tbody>
+                                    {paginatedInstallations.map((installation: any) => (
+                                        <tr
+                                            key={installation._id || installation.id}
+                                            onClick={() => setSelectedInstallation(installation)}
+                                            style={{
+                                                borderBottom: '1px solid var(--border-color)',
+                                                cursor: 'pointer',
+                                                transition: 'background 0.2s'
+                                            }}
+                                            onMouseEnter={(e) => {
+                                                e.currentTarget.style.background = 'var(--bg-tertiary)';
+                                            }}
+                                            onMouseLeave={(e) => {
+                                                e.currentTarget.style.background = 'transparent';
+                                            }}
+                                        >
+                                            <td style={{ padding: '0.75rem', fontWeight: 600 }}>{installation.meterSerialNumber}</td>
+                                            <td style={{ padding: '0.75rem' }}>{installation.consumerName}</td>
+                                            <td style={{ padding: '0.75rem', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                {installation.consumerAddress}
+                                            </td>
+                                            <td style={{ padding: '0.75rem' }}>{installation.installerName}</td>
+                                            <td style={{ padding: '0.75rem' }}>
+                                                <span style={{
+                                                    padding: '0.25rem 0.5rem',
+                                                    borderRadius: '4px',
+                                                    background: installation.status === 'INSTALLED' ? 'var(--success)' : 'var(--warning)',
+                                                    color: 'white',
+                                                    fontSize: '0.75rem'
+                                                }}>
+                                                    {installation.status === 'IN_TRANSIT' ? 'In Transit' : 'Installed'}
+                                                </span>
+                                            </td>
+                                            <td style={{ padding: '0.75rem', color: 'var(--text-secondary)' }}>
+                                                {new Date(installation.installationDate || installation.createdAt).toLocaleDateString()}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                        {totalInstallationsPages > 1 && (
+                            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginTop: '1.5rem', gap: '0.5rem' }}>
+                                <button
+                                    onClick={() => setInstallationsPage(p => Math.max(1, p - 1))}
+                                    disabled={installationsPage === 1}
+                                    style={{
+                                        padding: '0.5rem 1rem',
+                                        background: installationsPage === 1 ? 'var(--bg-secondary)' : 'var(--accent-primary)',
+                                        color: installationsPage === 1 ? 'var(--text-secondary)' : 'white',
+                                        border: 'none',
+                                        borderRadius: '6px',
+                                        cursor: installationsPage === 1 ? 'not-allowed' : 'pointer',
+                                        fontSize: '0.875rem'
+                                    }}
+                                >
+                                    ← Previous
+                                </button>
+                                <span style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
+                                    Page {installationsPage} of {totalInstallationsPages}
+                                </span>
+                                <button
+                                    onClick={() => setInstallationsPage(p => Math.min(totalInstallationsPages, p + 1))}
+                                    disabled={installationsPage === totalInstallationsPages}
+                                    style={{
+                                        padding: '0.5rem 1rem',
+                                        background: installationsPage === totalInstallationsPages ? 'var(--bg-secondary)' : 'var(--accent-primary)',
+                                        color: installationsPage === totalInstallationsPages ? 'var(--text-secondary)' : 'white',
+                                        border: 'none',
+                                        borderRadius: '6px',
+                                        cursor: installationsPage === totalInstallationsPages ? 'not-allowed' : 'pointer',
+                                        fontSize: '0.875rem'
+                                    }}
+                                >
+                                    Next →
+                                </button>
+                            </div>
+                        )}
+                    </>
                 ) : (
                     <div className="no-data">
                         <div className="no-data-icon">📍</div>
