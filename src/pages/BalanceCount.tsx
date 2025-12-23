@@ -1,24 +1,50 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useMeterContext } from '../context/MeterContext';
 import { Card, Select, Badge } from '../components/ui';
-import { MeterStatus } from '../types';
 import './BalanceCount.css';
 
 export const BalanceCount: React.FC = () => {
-    const { meters, vendors, stock } = useMeterContext();
+    const { meters, vendors } = useMeterContext();
     const [selectedVendor, setSelectedVendor] = useState<string>('all');
+
+    // Debug logging
+    useEffect(() => {
+        if (meters.length > 0) {
+            console.log('BalanceCount - Sample meter:', meters[0]);
+            console.log('BalanceCount - Total meters:', meters.length);
+        }
+        if (vendors.length > 0) {
+            console.log('BalanceCount - Vendors:', vendors);
+        }
+    }, [meters, vendors]);
 
     const filteredMeters = selectedVendor === 'all'
         ? meters
-        : meters.filter(m => m.vendorId === selectedVendor);
+        : meters.filter(m => {
+            // Handle both _id and id formats from API
+            const meterVendorId =
+                (m.vendorId as any)?._id || (m as any).vendor?._id;
+            console.log('BalanceCount - Meter vendor ID:', meterVendorId);
+            console.log('BalanceCount - Selected vendor:', selectedVendor);
+            console.log('BalanceCount - Meter vendor ID type:', typeof meterVendorId);
+            console.log('BalanceCount - Selected vendor type:', typeof selectedVendor);
+            return meterVendorId === selectedVendor;
+        });
+
+    console.log('BalanceCount - Selected vendor:', selectedVendor);
+    console.log('BalanceCount - Filtered meters count:', filteredMeters.length);
 
     const filteredStock = {
         total: filteredMeters.length,
-        inStock: filteredMeters.filter(m => m.status === MeterStatus.IN_STOCK).length,
-        assigned: filteredMeters.filter(m => m.status === MeterStatus.ASSIGNED).length,
-        inTransit: filteredMeters.filter(m => m.status === MeterStatus.IN_TRANSIT).length,
-        installed: filteredMeters.filter(m => m.status === MeterStatus.INSTALLED).length,
+        inStock: filteredMeters.filter(m => m.status === 'AVAILABLE').length,
+        assigned: filteredMeters.filter(m => m.status === 'ASSIGNED_TO_INSTALLER').length,
+        inTransit: 0, // Backend doesn't have separate in-transit status
+        installed: filteredMeters.filter(m => m.status === 'INSTALLED').length,
     };
+
+    console.log('BalanceCount - Filtered stock:', filteredStock);
+    console.log('BalanceCount - Used meters:', filteredStock.inStock);
+    console.log('BalanceCount - Balance count:', filteredStock.installed);
 
     const usedMeters = filteredStock.assigned + filteredStock.inTransit + filteredStock.installed;
     const balanceCount = filteredStock.total - usedMeters;
@@ -35,7 +61,7 @@ export const BalanceCount: React.FC = () => {
                     onChange={(e) => setSelectedVendor(e.target.value)}
                     options={[
                         { value: 'all', label: 'All Vendors' },
-                        ...vendors.map(v => ({ value: v.id, label: v.name }))
+                        ...vendors.map(v => ({ value: (v as any)._id || v.id, label: v.name }))
                     ]}
                 />
             </div>
@@ -142,13 +168,13 @@ export const BalanceCount: React.FC = () => {
                             <div>
                                 <Badge
                                     variant={
-                                        meter.status === MeterStatus.IN_STOCK ? 'success' :
-                                            meter.status === MeterStatus.ASSIGNED ? 'warning' :
-                                                meter.status === MeterStatus.IN_TRANSIT ? 'info' :
+                                        meter.status === 'AVAILABLE' ? 'success' :
+                                            meter.status === 'ASSIGNED_TO_INSTALLER' ? 'warning' :
+                                                meter.status === 'INSTALLED' ? 'info' :
                                                     'default'
                                     }
                                 >
-                                    {meter.status.replace('_', ' ')}
+                                    {meter.status.replace(/_/g, ' ')}
                                 </Badge>
                             </div>
                             <div className="text-muted">

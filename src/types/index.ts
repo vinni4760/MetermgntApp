@@ -15,10 +15,14 @@ export interface User {
 }
 
 export enum MeterStatus {
-    IN_STOCK = 'IN_STOCK',
-    ASSIGNED = 'ASSIGNED',
-    IN_TRANSIT = 'IN_TRANSIT',
+    AVAILABLE = 'AVAILABLE',
+    ASSIGNED_TO_INSTALLER = 'ASSIGNED_TO_INSTALLER',
     INSTALLED = 'INSTALLED',
+    DAMAGED = 'DAMAGED',
+    // Legacy values for backward compatibility
+    IN_STOCK = 'AVAILABLE',
+    ASSIGNED = 'ASSIGNED_TO_INSTALLER',
+    IN_TRANSIT = 'ASSIGNED_TO_INSTALLER',
 }
 
 export enum InstallationStatus {

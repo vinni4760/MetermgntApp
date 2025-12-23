@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { Meter, Vendor, Installation, Stock } from '../types';
 import { MeterStatus, InstallationStatus } from '../types';
-import { mockMeters, mockVendors, mockInstallations } from '../utils/mockData';
+import { metersAPI, vendorsAPI, installationsAPI } from '../services/api';
 
 interface MeterContextType {
     meters: Meter[];
@@ -12,6 +12,7 @@ interface MeterContextType {
     assignMeterToVendor: (meterId: string, vendorId: string) => void;
     addInstallation: (installation: Omit<Installation, 'id' | 'createdAt'>) => void;
     updateMeterStatus: (meterId: string, status: MeterStatus) => void;
+    refreshData: () => Promise<void>;
 }
 
 const MeterContext = createContext<MeterContextType | undefined>(undefined);
@@ -25,42 +26,66 @@ export const useMeterContext = () => {
 };
 
 export const MeterProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const [meters, setMeters] = useState<Meter[]>(() => {
-        const saved = localStorage.getItem('meters');
-        return saved ? JSON.parse(saved) : mockMeters;
-    });
+    const [meters, setMeters] = useState<Meter[]>([]);
+    const [vendors, setVendors] = useState<Vendor[]>([]);
+    const [installations, setInstallations] = useState<Installation[]>([]);
+    const [loading, setLoading] = useState(true);
 
-    const [vendors, setVendors] = useState<Vendor[]>(() => {
-        const saved = localStorage.getItem('vendors');
-        return saved ? JSON.parse(saved) : mockVendors;
-    });
+    // Fetch real data from API
+    const fetchData = async () => {
+        // Check if user is authenticated before fetching
+        const token = localStorage.getItem('authToken');
+        if (!token) {
+            console.log('MeterContext: No auth token, skipping data fetch');
+            setLoading(false);
+            return;
+        }
 
-    const [installations, setInstallations] = useState<Installation[]>(() => {
-        const saved = localStorage.getItem('installations');
-        return saved ? JSON.parse(saved) : mockInstallations;
-    });
+        try {
+            console.log('MeterContext: Starting data fetch...');
+            setLoading(true);
+            const [metersResponse, vendorsResponse, installationsResponse] = await Promise.all([
+                metersAPI.getAll(),
+                vendorsAPI.getAll(),
+                installationsAPI.getAll(),
+            ]);
+
+            console.log('MeterContext - Meters API Response:', metersResponse);
+            console.log('MeterContext - Vendors API Response:', vendorsResponse);
+            console.log('MeterContext - Installations API Response:', installationsResponse);
+
+            // API returns {success, count, data}, so extract the data array
+            setMeters(metersResponse.data || []);
+            setVendors(vendorsResponse.data || []);
+            setInstallations(installationsResponse.data || []);
+
+            console.log('MeterContext - Meters set:', metersResponse.data?.length || 0);
+            console.log('MeterContext - Vendors set:', vendorsResponse.data?.length || 0);
+        } catch (error: any) {
+            console.error('MeterContext - Failed to fetch data:', error);
+            console.error('MeterContext - Error details:', error.response?.data || error.message);
+            // Set empty arrays on error
+            setMeters([]);
+            setVendors([]);
+            setInstallations([]);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Initial data fetch when component mounts
+    useEffect(() => {
+        fetchData();
+    }, []);
 
     // Calculate stock automatically
     const stock: Stock = {
         totalMeters: meters.length,
-        assignedMeters: meters.filter(m => m.status === MeterStatus.ASSIGNED || m.status === MeterStatus.IN_TRANSIT || m.status === MeterStatus.INSTALLED).length,
-        installedMeters: meters.filter(m => m.status === MeterStatus.INSTALLED).length,
-        inTransitMeters: meters.filter(m => m.status === MeterStatus.IN_TRANSIT).length,
-        balanceCount: meters.filter(m => m.status === MeterStatus.IN_STOCK).length,
+        assignedMeters: meters.filter(m => m.status === 'ASSIGNED_TO_INSTALLER' || m.status === 'INSTALLED').length,
+        installedMeters: meters.filter(m => m.status === 'INSTALLED').length,
+        inTransitMeters: 0, // Backend doesn't have separate in-transit status
+        balanceCount: meters.filter(m => m.status === 'AVAILABLE').length,
     };
-
-    // Persist to localStorage
-    useEffect(() => {
-        localStorage.setItem('meters', JSON.stringify(meters));
-    }, [meters]);
-
-    useEffect(() => {
-        localStorage.setItem('vendors', JSON.stringify(vendors));
-    }, [vendors]);
-
-    useEffect(() => {
-        localStorage.setItem('installations', JSON.stringify(installations));
-    }, [installations]);
 
     const addMeter = (meterData: Omit<Meter, 'id' | 'createdAt'>) => {
         const newMeter: Meter = {
@@ -122,6 +147,7 @@ export const MeterProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             assignMeterToVendor,
             addInstallation,
             updateMeterStatus,
+            refreshData: fetchData,
         }}>
             {children}
         </MeterContext.Provider>
