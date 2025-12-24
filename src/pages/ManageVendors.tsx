@@ -17,7 +17,7 @@ export const ManageVendors: React.FC = () => {
         email: '',
     });
     const [message, setMessage] = useState('');
-    const messageTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const messageTimeoutRef = useRef<number | null>(null);
     const [currentPage, setCurrentPage] = useState(1);
     const VENDORS_PER_PAGE = 10;
 

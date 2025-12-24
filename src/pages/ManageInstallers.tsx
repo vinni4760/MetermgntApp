@@ -15,7 +15,7 @@ export const ManageInstallers: React.FC = () => {
         email: '',
     });
     const [message, setMessage] = useState('');
-    const messageTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const messageTimeoutRef = useRef<number | null>(null);
     const [currentPage, setCurrentPage] = useState(1);
     const INSTALLERS_PER_PAGE = 10;
 

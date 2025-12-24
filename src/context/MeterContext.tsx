@@ -29,7 +29,7 @@ export const MeterProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const [meters, setMeters] = useState<Meter[]>([]);
     const [vendors, setVendors] = useState<Vendor[]>([]);
     const [installations, setInstallations] = useState<Installation[]>([]);
-    const [loading, setLoading] = useState(true);
+    // const [loading, setLoading] = useState(true);
 
     // Fetch real data from API
     const fetchData = async () => {
@@ -37,13 +37,13 @@ export const MeterProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         const token = localStorage.getItem('authToken');
         if (!token) {
             console.log('MeterContext: No auth token, skipping data fetch');
-            setLoading(false);
+            // setLoading(false);
             return;
         }
 
         try {
             console.log('MeterContext: Starting data fetch...');
-            setLoading(true);
+            // setLoading(true);
             const [metersResponse, vendorsResponse, installationsResponse] = await Promise.all([
                 metersAPI.getAll(),
                 vendorsAPI.getAll(),
@@ -69,7 +69,7 @@ export const MeterProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             setVendors([]);
             setInstallations([]);
         } finally {
-            setLoading(false);
+            // setLoading(false);
         }
     };
 
