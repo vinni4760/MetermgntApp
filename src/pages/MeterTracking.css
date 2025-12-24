@@ -79,7 +79,7 @@
 }
 
 .installation-card {
-    padding: var(--spacing-xl);
+    padding: var(--spacing-md);
     transition: all var(--transition-normal);
 }
 
@@ -92,8 +92,8 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: var(--spacing-lg);
-    padding-bottom: var(--spacing-md);
+    margin-bottom: 0;
+    padding-bottom: var(--spacing-sm);
     border-bottom: 1px solid var(--border-color);
 }
 
@@ -138,8 +138,8 @@
 }
 
 .installation-card-footer {
-    margin-top: var(--spacing-lg);
-    padding-top: var(--spacing-md);
+    margin-top: var(--spacing-sm);
+    padding-top: var(--spacing-sm);
     border-top: 1px solid var(--border-color);
     text-align: center;
     font-size: 0.75rem;
