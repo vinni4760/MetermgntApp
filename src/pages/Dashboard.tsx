@@ -36,7 +36,7 @@ export const Dashboard: React.FC = () => {
                     inTransitMeters: installations.filter((i: any) => i.status === 'IN_TRANSIT').length
                 });
 
-                setRecentInstallations(installations.slice(-5).reverse());
+                setRecentInstallations(installations.slice(0, 5));
                 setVendors(vendorsRes.data);
             } catch (error) {
                 console.error('Failed to fetch stats:', error);
@@ -329,6 +329,72 @@ export const Dashboard: React.FC = () => {
                                         >
                                             View on Google Maps →
                                         </a>
+                                    </div>
+                                )}
+
+                                {selectedInstallation.photosBefore && selectedInstallation.photosBefore.length > 0 && (
+                                    <div style={{ background: '#252936', padding: '0.875rem', borderRadius: '8px' }}>
+                                        <div style={{ color: '#a0aec0', fontSize: '0.7rem', marginBottom: '0.5rem' }}>📷 PHOTOS BEFORE</div>
+                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: '0.5rem' }}>
+                                            {selectedInstallation.photosBefore.map((url: string, index: number) => (
+                                                <img
+                                                    key={index}
+                                                    src={url}
+                                                    alt={`Before ${index + 1}`}
+                                                    style={{
+                                                        width: '100%',
+                                                        height: '100px',
+                                                        objectFit: 'cover',
+                                                        borderRadius: '6px',
+                                                        cursor: 'pointer',
+                                                        border: '2px solid #2d3748',
+                                                        transition: 'transform 0.2s, border-color 0.2s'
+                                                    }}
+                                                    onClick={() => window.open(url, '_blank')}
+                                                    onMouseEnter={(e) => {
+                                                        e.currentTarget.style.transform = 'scale(1.05)';
+                                                        e.currentTarget.style.borderColor = '#667eea';
+                                                    }}
+                                                    onMouseLeave={(e) => {
+                                                        e.currentTarget.style.transform = 'scale(1)';
+                                                        e.currentTarget.style.borderColor = '#2d3748';
+                                                    }}
+                                                />
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {selectedInstallation.photosAfter && selectedInstallation.photosAfter.length > 0 && (
+                                    <div style={{ background: '#252936', padding: '0.875rem', borderRadius: '8px' }}>
+                                        <div style={{ color: '#a0aec0', fontSize: '0.7rem', marginBottom: '0.5rem' }}>📷 PHOTOS AFTER</div>
+                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: '0.5rem' }}>
+                                            {selectedInstallation.photosAfter.map((url: string, index: number) => (
+                                                <img
+                                                    key={index}
+                                                    src={url}
+                                                    alt={`After ${index + 1}`}
+                                                    style={{
+                                                        width: '100%',
+                                                        height: '100px',
+                                                        objectFit: 'cover',
+                                                        borderRadius: '6px',
+                                                        cursor: 'pointer',
+                                                        border: '2px solid #2d3748',
+                                                        transition: 'transform 0.2s, border-color 0.2s'
+                                                    }}
+                                                    onClick={() => window.open(url, '_blank')}
+                                                    onMouseEnter={(e) => {
+                                                        e.currentTarget.style.transform = 'scale(1.05)';
+                                                        e.currentTarget.style.borderColor = '#667eea';
+                                                    }}
+                                                    onMouseLeave={(e) => {
+                                                        e.currentTarget.style.transform = 'scale(1)';
+                                                        e.currentTarget.style.borderColor = '#2d3748';
+                                                    }}
+                                                />
+                                            ))}
+                                        </div>
                                     </div>
                                 )}
 

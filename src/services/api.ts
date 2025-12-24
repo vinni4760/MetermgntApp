@@ -59,6 +59,24 @@ export const installationsAPI = {
     },
 };
 
+// Upload API
+export const uploadAPI = {
+    uploadImages: async (files: FileList) => {
+        const formData = new FormData();
+        Array.from(files).forEach(file => {
+            formData.append('photos', file);
+        });
+
+        const response = await apiClient.post('/upload', formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+        });
+        return response.data;
+    },
+};
+
+
 // Meters API
 export const metersAPI = {
     getAll: async () => {

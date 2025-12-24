@@ -221,6 +221,72 @@ export const MeterTracking: React.FC = () => {
                                         </div>
                                     )}
 
+                                    {selectedInstallation.photosBefore && selectedInstallation.photosBefore.length > 0 && (
+                                        <div className="detail-row" style={{ display: 'block' }}>
+                                            <span className="detail-label">📷 Photos Before Installation:</span>
+                                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: '0.5rem', marginTop: '0.5rem' }}>
+                                                {selectedInstallation.photosBefore.map((url: string, index: number) => (
+                                                    <img
+                                                        key={index}
+                                                        src={url}
+                                                        alt={`Before ${index + 1}`}
+                                                        style={{
+                                                            width: '100%',
+                                                            height: '120px',
+                                                            objectFit: 'cover',
+                                                            borderRadius: '8px',
+                                                            cursor: 'pointer',
+                                                            border: '2px solid var(--border-color)',
+                                                            transition: 'transform 0.2s, border-color 0.2s'
+                                                        }}
+                                                        onClick={() => window.open(url, '_blank')}
+                                                        onMouseEnter={(e) => {
+                                                            e.currentTarget.style.transform = 'scale(1.05)';
+                                                            e.currentTarget.style.borderColor = 'var(--accent-primary)';
+                                                        }}
+                                                        onMouseLeave={(e) => {
+                                                            e.currentTarget.style.transform = 'scale(1)';
+                                                            e.currentTarget.style.borderColor = 'var(--border-color)';
+                                                        }}
+                                                    />
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {selectedInstallation.photosAfter && selectedInstallation.photosAfter.length > 0 && (
+                                        <div className="detail-row" style={{ display: 'block' }}>
+                                            <span className="detail-label">📷 Photos After Installation:</span>
+                                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: '0.5rem', marginTop: '0.5rem' }}>
+                                                {selectedInstallation.photosAfter.map((url: string, index: number) => (
+                                                    <img
+                                                        key={index}
+                                                        src={url}
+                                                        alt={`After ${index + 1}`}
+                                                        style={{
+                                                            width: '100%',
+                                                            height: '120px',
+                                                            objectFit: 'cover',
+                                                            borderRadius: '8px',
+                                                            cursor: 'pointer',
+                                                            border: '2px solid var(--border-color)',
+                                                            transition: 'transform 0.2s, border-color 0.2s'
+                                                        }}
+                                                        onClick={() => window.open(url, '_blank')}
+                                                        onMouseEnter={(e) => {
+                                                            e.currentTarget.style.transform = 'scale(1.05)';
+                                                            e.currentTarget.style.borderColor = 'var(--accent-primary)';
+                                                        }}
+                                                        onMouseLeave={(e) => {
+                                                            e.currentTarget.style.transform = 'scale(1)';
+                                                            e.currentTarget.style.borderColor = 'var(--border-color)';
+                                                        }}
+                                                    />
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
                                     {selectedInstallation.newMeterReading && (
                                         <div className="detail-row">
                                             <span className="detail-label">📊 New Meter Reading:</span>

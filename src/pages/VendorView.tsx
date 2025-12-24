@@ -512,6 +512,70 @@ export const VendorView: React.FC = () => {
                                     </div>
                                 </div>
                             )}
+                            {selectedInstallation.photosBefore && selectedInstallation.photosBefore.length > 0 && (
+                                <div>
+                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>📷 Photos Before Installation</div>
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: '0.5rem' }}>
+                                        {selectedInstallation.photosBefore.map((url: string, index: number) => (
+                                            <img
+                                                key={index}
+                                                src={url}
+                                                alt={`Before ${index + 1}`}
+                                                style={{
+                                                    width: '100%',
+                                                    height: '100px',
+                                                    objectFit: 'cover',
+                                                    borderRadius: '6px',
+                                                    cursor: 'pointer',
+                                                    border: '2px solid var(--border-color)',
+                                                    transition: 'transform 0.2s, border-color 0.2s'
+                                                }}
+                                                onClick={() => window.open(url, '_blank')}
+                                                onMouseEnter={(e) => {
+                                                    e.currentTarget.style.transform = 'scale(1.05)';
+                                                    e.currentTarget.style.borderColor = 'var(--accent-primary)';
+                                                }}
+                                                onMouseLeave={(e) => {
+                                                    e.currentTarget.style.transform = 'scale(1)';
+                                                    e.currentTarget.style.borderColor = 'var(--border-color)';
+                                                }}
+                                            />
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                            {selectedInstallation.photosAfter && selectedInstallation.photosAfter.length > 0 && (
+                                <div>
+                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>📷 Photos After Installation</div>
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: '0.5rem' }}>
+                                        {selectedInstallation.photosAfter.map((url: string, index: number) => (
+                                            <img
+                                                key={index}
+                                                src={url}
+                                                alt={`After ${index + 1}`}
+                                                style={{
+                                                    width: '100%',
+                                                    height: '100px',
+                                                    objectFit: 'cover',
+                                                    borderRadius: '6px',
+                                                    cursor: 'pointer',
+                                                    border: '2px solid var(--border-color)',
+                                                    transition: 'transform 0.2s, border-color 0.2s'
+                                                }}
+                                                onClick={() => window.open(url, '_blank')}
+                                                onMouseEnter={(e) => {
+                                                    e.currentTarget.style.transform = 'scale(1.05)';
+                                                    e.currentTarget.style.borderColor = 'var(--accent-primary)';
+                                                }}
+                                                onMouseLeave={(e) => {
+                                                    e.currentTarget.style.transform = 'scale(1)';
+                                                    e.currentTarget.style.borderColor = 'var(--border-color)';
+                                                }}
+                                            />
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
                             {selectedInstallation.newMeterReading && (
                                 <div>
                                     <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>Meter Reading</div>

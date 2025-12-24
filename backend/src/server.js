@@ -22,6 +22,8 @@ app.use('/api/users', require('./routes/users'));
 app.use('/api/vendors', require('./routes/vendors'));
 app.use('/api/installations', require('./routes/installations'));
 app.use('/api/meters', require('./routes/meters'));
+app.use('/api/upload', require('./routes/upload'));
+
 
 // Health check
 app.get('/api/health', (req, res) => {

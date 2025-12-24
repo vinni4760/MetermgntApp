@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { metersAPI, vendorsAPI, installationsAPI } from '../services/api';
+import { metersAPI, vendorsAPI, installationsAPI, uploadAPI } from '../services/api';
 import { Button, Card, Input, TextArea, Select } from '../components/ui';
 import { InstallationStatus, UserRole } from '../types';
 import { mockInstallers } from '../utils/mockData';
@@ -28,6 +28,7 @@ export const DailyInstallation: React.FC = () => {
     });
     const [message, setMessage] = useState('');
     const [loading, setLoading] = useState(false);
+    const [uploading, setUploading] = useState(false);
     const [selectedInstallation, setSelectedInstallation] = useState<any>(null);
     const [installationsPage, setInstallationsPage] = useState(1);
     const INSTALLATIONS_PER_PAGE = 15;
@@ -154,6 +155,29 @@ export const DailyInstallation: React.FC = () => {
         }
 
         try {
+            setLoading(true);
+            setUploading(true);
+
+            // Upload images to Cloudinary
+            let photosBeforeUrls: string[] = [];
+            let photosAfterUrls: string[] = [];
+
+            if (photoFiles.before && photoFiles.before.length > 0) {
+                setMessage('📤 Uploading before photos...');
+                const beforeResponse = await uploadAPI.uploadImages(photoFiles.before);
+                photosBeforeUrls = beforeResponse.data;
+            }
+
+            if (photoFiles.after && photoFiles.after.length > 0) {
+                setMessage('📤 Uploading after photos...');
+                const afterResponse = await uploadAPI.uploadImages(photoFiles.after);
+                photosAfterUrls = afterResponse.data;
+            }
+
+            setUploading(false);
+            setMessage('💾 Saving installation...');
+
+            // Create installation with image URLs
             await installationsAPI.create({
                 ...formData,
                 gpsLocation: {
@@ -161,11 +185,22 @@ export const DailyInstallation: React.FC = () => {
                     longitude: gpsLocation.longitude
                 },
                 installationDate: new Date().toISOString(),
-                photosBefore: [],
-                photosAfter: [],
+                photosBefore: photosBeforeUrls,
+                photosAfter: photosAfterUrls,
             });
 
             setMessage('✅ Installation logged successfully!');
+
+            // Refresh installations list
+            const installationsRes = await installationsAPI.getAll();
+            if (user?.role === UserRole.INSTALLER) {
+                const myInstallations = installationsRes.data.filter(
+                    (i: any) => i.installerName === user.name
+                );
+                setInstallations(myInstallations);
+            } else {
+                setInstallations(installationsRes.data);
+            }
 
             // Reset form
             setFormData({
@@ -184,6 +219,9 @@ export const DailyInstallation: React.FC = () => {
             setTimeout(() => setMessage(''), 3000);
         } catch (error: any) {
             setMessage(`❌ ${error.response?.data?.error || 'Failed to save installation'}`);
+        } finally {
+            setLoading(false);
+            setUploading(false);
         }
     };
 
@@ -377,8 +415,8 @@ export const DailyInstallation: React.FC = () => {
                     )}
 
                     <div className="form-actions">
-                        <Button type="submit" variant="primary" size="lg">
-                            Submit Installation
+                        <Button type="submit" variant="primary" size="lg" disabled={loading || uploading}>
+                            {uploading ? '📤 Uploading Photos...' : loading ? '💾 Saving...' : 'Submit Installation'}
                         </Button>
                     </div>
                 </form>
@@ -628,6 +666,52 @@ export const DailyInstallation: React.FC = () => {
                                 <div>
                                     <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>Old Meter Reading</div>
                                     <div>{selectedInstallation.oldMeterReading}</div>
+                                </div>
+                            )}
+                            {selectedInstallation.photosBefore && selectedInstallation.photosBefore.length > 0 && (
+                                <div>
+                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Photos Before Installation</div>
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: '0.5rem' }}>
+                                        {selectedInstallation.photosBefore.map((url: string, index: number) => (
+                                            <img
+                                                key={index}
+                                                src={url}
+                                                alt={`Before ${index + 1}`}
+                                                style={{
+                                                    width: '100%',
+                                                    height: '100px',
+                                                    objectFit: 'cover',
+                                                    borderRadius: '6px',
+                                                    cursor: 'pointer',
+                                                    border: '1px solid var(--border-color)'
+                                                }}
+                                                onClick={() => window.open(url, '_blank')}
+                                            />
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                            {selectedInstallation.photosAfter && selectedInstallation.photosAfter.length > 0 && (
+                                <div>
+                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Photos After Installation</div>
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: '0.5rem' }}>
+                                        {selectedInstallation.photosAfter.map((url: string, index: number) => (
+                                            <img
+                                                key={index}
+                                                src={url}
+                                                alt={`After ${index + 1}`}
+                                                style={{
+                                                    width: '100%',
+                                                    height: '100px',
+                                                    objectFit: 'cover',
+                                                    borderRadius: '6px',
+                                                    cursor: 'pointer',
+                                                    border: '1px solid var(--border-color)'
+                                                }}
+                                                onClick={() => window.open(url, '_blank')}
+                                            />
+                                        ))}
+                                    </div>
                                 </div>
                             )}
                             {selectedInstallation.newMeterReading && (
