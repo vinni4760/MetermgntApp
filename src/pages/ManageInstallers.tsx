@@ -76,7 +76,7 @@ export const ManageInstallers: React.FC = () => {
             setFormData({ name: '', username: '', password: '', email: '' });
             setShowForm(false);
             setEditingId(null);
-            fetchInstallers();
+            await fetchInstallers();
 
             // Clear any existing timeout and set new one
             if (messageTimeoutRef.current) clearTimeout(messageTimeoutRef.current);

@@ -87,7 +87,7 @@ export const ManageVendors: React.FC = () => {
             setFormData({ name: '', username: '', password: '', vendorId: '', email: '' });
             setShowForm(false);
             setEditingId(null);
-            fetchVendors();
+            await fetchVendors();
 
             // Clear any existing timeout and set new one
             if (messageTimeoutRef.current) clearTimeout(messageTimeoutRef.current);
