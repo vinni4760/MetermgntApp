@@ -18,6 +18,7 @@ export const ManageVendors: React.FC = () => {
     });
     const [message, setMessage] = useState('');
     const messageTimeoutRef = useRef<number | null>(null);
+    const [submitting, setSubmitting] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
     const VENDORS_PER_PAGE = 10;
 
@@ -45,6 +46,8 @@ export const ManageVendors: React.FC = () => {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        if (submitting) return; // Prevent double-submit
 
         if (!formData.name || !formData.username || !formData.vendorId) {
             setMessage('❌ Please fill all required fields');
@@ -98,6 +101,8 @@ export const ManageVendors: React.FC = () => {
             setMessage(`❌ ${error.response?.data?.error || 'Operation failed'}`);
             // Error messages persist longer
             messageTimeoutRef.current = setTimeout(() => setMessage(''), 5000);
+        } finally {
+            setSubmitting(false);
         }
     };
 
@@ -219,8 +224,8 @@ export const ManageVendors: React.FC = () => {
                             <Button type="button" variant="outline" onClick={handleCancel}>
                                 Cancel
                             </Button>
-                            <Button type="submit" variant="primary">
-                                {editingId ? 'Update' : 'Add'} Vendor
+                            <Button type="submit" variant="primary" disabled={submitting}>
+                                {submitting ? 'Saving...' : (editingId ? 'Update' : 'Add')} Vendor
                             </Button>
                         </div>
                     </form>
