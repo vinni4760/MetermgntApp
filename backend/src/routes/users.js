@@ -1,6 +1,7 @@
 const express = require('express');
 const User = require('../models/User');
 const { protect, authorize } = require('../middleware/auth');
+const { sendCredentialsEmail } = require('../services/emailService');
 
 const router = express.Router();
 
@@ -25,7 +26,27 @@ router.get('/', protect, authorize('ADMIN'), async (req, res) => {
 // Create user (admin only)
 router.post('/', protect, authorize('ADMIN'), async (req, res) => {
     try {
+        // Store plain password before user creation (it will be hashed)
+        const plainPassword = req.body.password;
+        const userEmail = req.body.email;
+
         const user = await User.create(req.body);
+
+        // Send credentials email if email is provided
+        let emailSent = false;
+        if (userEmail) {
+            const emailResult = await sendCredentialsEmail(
+                userEmail,
+                user.username,
+                plainPassword,
+                user.role
+            );
+            emailSent = emailResult.success;
+
+            if (!emailResult.success) {
+                console.warn('Failed to send email:', emailResult.message);
+            }
+        }
 
         // Return without password
         const userResponse = user.toObject();
@@ -33,7 +54,11 @@ router.post('/', protect, authorize('ADMIN'), async (req, res) => {
 
         res.status(201).json({
             success: true,
-            data: userResponse
+            data: userResponse,
+            emailSent: emailSent,
+            message: emailSent
+                ? `User created successfully! Login credentials sent to ${userEmail}`
+                : 'User created successfully. No email sent (email not configured or not provided).'
         });
     } catch (error) {
         console.error('Create user error:', error);

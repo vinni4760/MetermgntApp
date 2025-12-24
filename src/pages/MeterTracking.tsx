@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { installationsAPI } from '../services/api';
+import { installationsAPI, usersAPI } from '../services/api';
 import { Card, Badge, Select, Modal } from '../components/ui';
 import { InstallationStatus } from '../types';
 import { InstallationMap } from '../components/Map/InstallationMap';
@@ -10,27 +10,35 @@ export const MeterTracking: React.FC = () => {
     const [statusFilter, setStatusFilter] = useState<string>('all');
     const [installerFilter, setInstallerFilter] = useState<string>('all');
     const [loading, setLoading] = useState(true);
+    const [installers, setInstallers] = useState<any[]>([]);
     const [selectedInstallation, setSelectedInstallation] = useState<any | null>(null);
 
     const [currentPage, setCurrentPage] = useState(1);
     const ITEMS_PER_PAGE = 15;
 
     useEffect(() => {
-        const fetchInstallations = async () => {
+        const fetchData = async () => {
             try {
-                const response = await installationsAPI.getAll();
-                setInstallations(response.data);
+                const [installationsResponse, usersResponse] = await Promise.all([
+                    installationsAPI.getAll(),
+                    usersAPI.getAll()
+                ]);
+                setInstallations(installationsResponse.data);
+
+                // Filter only installer users
+                const installerUsers = usersResponse.data.filter((u: any) => u.role === 'INSTALLER');
+                setInstallers(installerUsers);
             } catch (error) {
-                console.error('Failed to fetch installations:', error);
+                console.error('Failed to fetch data:', error);
             } finally {
                 setLoading(false);
             }
         };
 
-        fetchInstallations();
+        fetchData();
     }, []);
 
-    const uniqueInstallers = Array.from(new Set(installations.map(i => i.installerName)));
+    // Remove the old uniqueInstallers line since we now fetch installers directly
 
     const filteredInstallations = installations.filter(installation => {
         const matchesStatus = statusFilter === 'all' || installation.status === statusFilter;
@@ -86,7 +94,7 @@ export const MeterTracking: React.FC = () => {
                         onChange={(e) => setInstallerFilter(e.target.value)}
                         options={[
                             { value: 'all', label: 'All Installers' },
-                            ...uniqueInstallers.map(name => ({ value: name, label: name }))
+                            ...installers.map(installer => ({ value: installer.name, label: installer.name }))
                         ]}
                     />
                 </div>
@@ -97,7 +105,7 @@ export const MeterTracking: React.FC = () => {
                 <Card className="summary-card summary-transit">
                     <div className="summary-icon">🚚</div>
                     <div className="summary-value">
-                        {installations.filter(i => i.status === InstallationStatus.IN_TRANSIT).length}
+                        {filteredInstallations.filter(i => i.status === InstallationStatus.IN_TRANSIT).length}
                     </div>
                     <div className="summary-label">In Transit</div>
                 </Card>
@@ -105,14 +113,14 @@ export const MeterTracking: React.FC = () => {
                 <Card className="summary-card summary-installed">
                     <div className="summary-icon">✓</div>
                     <div className="summary-value">
-                        {installations.filter(i => i.status === InstallationStatus.INSTALLED).length}
+                        {filteredInstallations.filter(i => i.status === InstallationStatus.INSTALLED).length}
                     </div>
                     <div className="summary-label">Installed</div>
                 </Card>
 
                 <Card className="summary-card summary-total">
                     <div className="summary-icon">📊</div>
-                    <div className="summary-value">{installations.length}</div>
+                    <div className="summary-value">{filteredInstallations.length}</div>
                     <div className="summary-label">Total Installations</div>
                 </Card>
             </div>

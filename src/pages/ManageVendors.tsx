@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { usersAPI, vendorsAPI } from '../services/api';
 import { Card, Button, Input } from '../components/ui';
 import './ManageVendors.css';
@@ -14,8 +14,10 @@ export const ManageVendors: React.FC = () => {
         username: '',
         password: '',
         vendorId: '',
+        email: '',
     });
     const [message, setMessage] = useState('');
+    const messageTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const [currentPage, setCurrentPage] = useState(1);
     const VENDORS_PER_PAGE = 10;
 
@@ -68,21 +70,34 @@ export const ManageVendors: React.FC = () => {
                 setMessage('✅ Vendor updated successfully');
             } else {
                 // Create new vendor
-                await usersAPI.create({
+                const response = await usersAPI.create({
                     ...formData,
                     role: 'VENDOR'
                 });
-                setMessage('✅ Vendor added successfully');
+
+                // Show success message based on email sent status
+                if (response.emailSent) {
+                    setMessage(`✅ Vendor added successfully! Credentials sent to ${formData.email}`);
+                } else {
+                    setMessage(`✅ Success! ${formData.name} has been added as a vendor user. Note: Email service not configured, please share credentials manually.`);
+                }
             }
 
             // Reset form and refresh list
-            setFormData({ name: '', username: '', password: '', vendorId: '' });
+            setFormData({ name: '', username: '', password: '', vendorId: '', email: '' });
             setShowForm(false);
             setEditingId(null);
             fetchVendors();
-            setTimeout(() => setMessage(''), 3000);
+
+            // Clear any existing timeout and set new one
+            if (messageTimeoutRef.current) clearTimeout(messageTimeoutRef.current);
+            messageTimeoutRef.current = setTimeout(() => setMessage(''), 5000);
         } catch (error: any) {
+            // Clear any success message timeout
+            if (messageTimeoutRef.current) clearTimeout(messageTimeoutRef.current);
             setMessage(`❌ ${error.response?.data?.error || 'Operation failed'}`);
+            // Error messages persist longer
+            messageTimeoutRef.current = setTimeout(() => setMessage(''), 5000);
         }
     };
 
@@ -92,6 +107,7 @@ export const ManageVendors: React.FC = () => {
             username: vendor.username,
             password: '',
             vendorId: vendor.vendorId || '',
+            email: vendor.email || '',
         });
         setEditingId(vendor.id);
         setShowForm(true);
@@ -111,7 +127,7 @@ export const ManageVendors: React.FC = () => {
     };
 
     const handleCancel = () => {
-        setFormData({ name: '', username: '', password: '', vendorId: '' });
+        setFormData({ name: '', username: '', password: '', vendorId: '', email: '' });
         setEditingId(null);
         setShowForm(false);
     };
@@ -169,6 +185,14 @@ export const ManageVendors: React.FC = () => {
                             value={formData.username}
                             onChange={(e) => setFormData({ ...formData, username: e.target.value })}
                             placeholder="e.g., vendor1"
+                        />
+                        <Input
+                            label="Email *"
+                            type="email"
+                            name="email"
+                            value={formData.email}
+                            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                            placeholder="vendor@example.com"
                         />
                         <Input
                             label={editingId ? "Password (leave blank to keep current)" : "Password *"}

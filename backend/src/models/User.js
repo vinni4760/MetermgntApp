@@ -28,6 +28,12 @@ const userSchema = new mongoose.Schema({
         ref: 'Vendor',
         default: null
     },
+    email: {
+        type: String,
+        trim: true,
+        lowercase: true,
+        match: [/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/, 'Please enter a valid email']
+    },
     createdAt: {
         type: Date,
         default: Date.now
