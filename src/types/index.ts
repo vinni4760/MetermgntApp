@@ -1,6 +1,6 @@
 // Type definitions for the Meter Management System
 
-export const enum UserRole {
+export enum UserRole {
     ADMIN = 'ADMIN',
     INSTALLER = 'INSTALLER',
     VENDOR = 'VENDOR',
@@ -14,7 +14,7 @@ export interface User {
     vendorId?: string; // Links to Vendor entity when role is VENDOR
 }
 
-export const enum MeterStatus {
+export enum MeterStatus {
     AVAILABLE = 'AVAILABLE',
     ASSIGNED_TO_INSTALLER = 'ASSIGNED_TO_INSTALLER',
     INSTALLED = 'INSTALLED',
@@ -25,7 +25,7 @@ export const enum MeterStatus {
     IN_TRANSIT = 'ASSIGNED_TO_INSTALLER',
 }
 
-export const enum InstallationStatus {
+export enum InstallationStatus {
     IN_TRANSIT = 'IN_TRANSIT',
     INSTALLED = 'INSTALLED',
 }
