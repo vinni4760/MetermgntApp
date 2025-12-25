@@ -45,11 +45,13 @@ export const ManageInstallers: React.FC = () => {
 
         if (!formData.name || !formData.username) {
             setMessage('❌ Please fill all required fields');
+            setSubmitting(false);
             return;
         }
 
         if (!editingId && !formData.password) {
             setMessage('❌ Password is required for new installers');
+            setSubmitting(false);
             return;
         }
 
